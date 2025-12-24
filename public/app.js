@@ -59,7 +59,7 @@ function initCountdown() {
   const el = document.getElementById('countdown');
   if (!el) return;
   
-  const christmas = new Date('2024-12-26T00:00:00+09:00');
+  const christmas = new Date('2025-12-26T00:00:00+09:00');
   
   setInterval(() => {
     const diff = christmas - new Date();
@@ -144,22 +144,29 @@ async function handlePhotoUpload(file) {
       if (data.success) {
         APP_STATE.uploadedPhoto = data.filename;
         qualityBadge.querySelector('strong').textContent = result.score;
+        qualityBadge.classList.remove('quality-bad');
         qualityBadge.classList.add('quality-good');
         nextBtn.disabled = false;
         showToast('✅ 완벽한 사진이에요!', 'success');
       }
     } else {
       qualityBadge.querySelector('strong').textContent = result.score;
+      qualityBadge.classList.remove('quality-good');
       qualityBadge.classList.add('quality-bad');
       nextBtn.disabled = true;
       showToast('⚠️ ' + result.message, 'warning');
     }
   } catch (e) {
+    console.error('품질 체크 오류:', e);
     overlay?.classList.remove('show');
     uploadArea.style.display = 'none';
     previewContainer.style.display = 'block';
+    // 오류 시에도 일단 업로드는 허용하되 경고 표시
+    qualityBadge.querySelector('strong').textContent = '?';
+    qualityBadge.classList.add('quality-warning');
     APP_STATE.uploadedPhoto = file;
     nextBtn.disabled = false;
+    showToast('⚠️ 품질을 확인할 수 없어요. 선명한 사진인지 확인해주세요.', 'warning');
   }
 }
 
@@ -180,18 +187,18 @@ async function checkImageQuality(file) {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         
-        // 밝기
+        // 밝기 체크 (더 엄격하게)
         let totalBrightness = 0;
         for (let i = 0; i < data.length; i += 4) {
           totalBrightness += (data[i] + data[i+1] + data[i+2]) / 3;
         }
         const avgBrightness = totalBrightness / (data.length / 4);
-        const brightnessOk = avgBrightness > 50 && avgBrightness < 210;
+        const brightnessOk = avgBrightness > 60 && avgBrightness < 200;
         
         updateCheck('checkBrightness', brightnessOk);
         updateProgress(33);
         
-        // 선명도 (라플라시안)
+        // 선명도 체크 (라플라시안, 더 엄격하게)
         setTimeout(() => {
           let sharpness = 0;
           for (let y = 1; y < canvas.height - 1; y++) {
@@ -205,7 +212,7 @@ async function checkImageQuality(file) {
             }
           }
           const avgSharpness = sharpness / (canvas.width * canvas.height);
-          const sharpnessOk = avgSharpness > 12;
+          const sharpnessOk = avgSharpness > 15;
           
           updateCheck('checkSharpness', sharpnessOk);
           updateProgress(66);
