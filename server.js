@@ -134,7 +134,7 @@ const queueStats = {
     const estimatedTime = new Date(Date.now() + waitMinutes * 60 * 1000);
     
     // 크리스마스 아침 (12/25 오전 7시) 전인지 체크
-    const christmasMorning = new Date('2024-12-25T07:00:00+09:00');
+    const christmasMorning = new Date('2025-12-25T07:00:00+09:00');
     const beforeChristmas = estimatedTime < christmasMorning;
     
     return {
@@ -479,8 +479,8 @@ app.get('/api/queue/status', (req, res) => {
     completedToday: completedToday.length,
     avgProcessTime: queueStats.avgProcessTimeMinutes,
     // 마감 정보
-    deadline: '2024-12-24T18:00:00+09:00',
-    isOpen: new Date() < new Date('2024-12-24T18:00:00+09:00')
+    deadline: '2025-12-24T18:00:00+09:00',
+    isOpen: new Date() < new Date('2025-12-24T18:00:00+09:00')
   });
 });
 
