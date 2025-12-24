@@ -1,6 +1,6 @@
 /* ============================================
-   🎅 산타를 만난 순간 - 스타일시트
-   러셀 브런슨 퍼널 + 전환율 최적화 디자인
+   ðŸŽ… ì‚°íƒ€ë¥¼ ë§Œë‚œ ìˆœê°„ - ìŠ¤íƒ€ì¼ì‹œíŠ¸
+   ëŸ¬ì…€ ë¸ŒëŸ°ìŠ¨ í¼ë„ + ì „í™˜ìœ¨ ìµœì í™” ë””ìžì¸
    ============================================ */
 
 :root {
@@ -41,7 +41,7 @@ body {
 }
 
 /* ============================================
-   🔥 긴급성 배너 (FOMO)
+   ðŸ”¥ ê¸´ê¸‰ì„± ë°°ë„ˆ (FOMO)
    ============================================ */
 .urgency-banner {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
@@ -79,7 +79,7 @@ body {
 }
 
 /* ============================================
-   헤더
+   í—¤ë”
    ============================================ */
 .header {
   text-align: center;
@@ -100,7 +100,7 @@ body {
 }
 
 /* ============================================
-   스텝 섹션
+   ìŠ¤í… ì„¹ì…˜
    ============================================ */
 .step-section {
   display: none;
@@ -145,7 +145,7 @@ body {
 }
 
 /* ============================================
-   업로드 영역
+   ì—…ë¡œë“œ ì˜ì—­
    ============================================ */
 .upload-area {
   border: 3px dashed var(--border);
@@ -180,7 +180,7 @@ body {
   color: var(--text-light);
 }
 
-/* 미리보기 */
+/* ë¯¸ë¦¬ë³´ê¸° */
 .preview-container {
   position: relative;
   border-radius: 16px;
@@ -218,7 +218,7 @@ body {
 }
 
 /* ============================================
-   버튼
+   ë²„íŠ¼
    ============================================ */
 .btn-primary {
   width: 100%;
@@ -289,7 +289,7 @@ body {
 }
 
 /* ============================================
-   폼 요소
+   í¼ ìš”ì†Œ
    ============================================ */
 .form-group {
   margin-bottom: 20px;
@@ -343,7 +343,7 @@ body {
 }
 
 /* ============================================
-   💰 가격 카드 (퍼널 핵심!)
+   ðŸ’° ê°€ê²© ì¹´ë“œ (í¼ë„ í•µì‹¬!)
    ============================================ */
 .pricing-cards {
   display: flex;
@@ -374,7 +374,7 @@ body {
   box-shadow: 0 0 0 3px rgba(212, 36, 38, 0.1);
 }
 
-/* 추천 카드 강조 */
+/* ì¶”ì²œ ì¹´ë“œ ê°•ì¡° */
 .price-card.recommended {
   border-color: var(--primary);
   border-width: 3px;
@@ -478,7 +478,7 @@ body {
 }
 
 /* ============================================
-   🛒 Bump Offers
+   ðŸ›’ Bump Offers
    ============================================ */
 .bump-offers {
   background: #F8F9FA;
@@ -549,7 +549,7 @@ body {
 }
 
 /* ============================================
-   가격 요약
+   ê°€ê²© ìš”ì•½
    ============================================ */
 .price-summary {
   background: #F8F9FA;
@@ -585,7 +585,7 @@ body {
 }
 
 /* ============================================
-   결제 정보
+   ê²°ì œ ì •ë³´
    ============================================ */
 .payment-info {
   text-align: center;
@@ -607,7 +607,7 @@ body {
 }
 
 /* ============================================
-   사회적 증거
+   ì‚¬íšŒì  ì¦ê±°
    ============================================ */
 .social-proof {
   display: flex;
@@ -634,7 +634,7 @@ body {
 }
 
 /* ============================================
-   후기
+   í›„ê¸°
    ============================================ */
 .reviews-section {
   padding: 24px 20px;
@@ -716,7 +716,7 @@ body {
 }
 
 .faq-item[open] summary::after {
-  content: '−';
+  content: 'âˆ’';
 }
 
 .faq-item p {
@@ -726,7 +726,7 @@ body {
 }
 
 /* ============================================
-   푸터
+   í‘¸í„°
    ============================================ */
 .footer {
   text-align: center;
@@ -746,7 +746,7 @@ body {
 }
 
 /* ============================================
-   로딩 오버레이
+   ë¡œë”© ì˜¤ë²„ë ˆì´
    ============================================ */
 .loading-overlay {
   display: none;
@@ -810,7 +810,7 @@ body {
 }
 
 /* ============================================
-   반응형
+   ë°˜ì‘í˜•
    ============================================ */
 @media (min-width: 481px) {
   body {
@@ -823,4 +823,283 @@ body {
     margin: 20px auto;
     overflow: hidden;
   }
+}
+
+/* ============================================
+   🔥 품질 체크 오버레이
+   ============================================ */
+.quality-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+
+.quality-overlay.show {
+  display: flex;
+}
+
+.quality-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+  animation: modalPop 0.3s ease;
+}
+
+@keyframes modalPop {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.santa-checking {
+  font-size: 80px;
+  animation: santaBounce 1s ease infinite;
+}
+
+@keyframes santaBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-10px) rotate(-5deg); }
+  75% { transform: translateY(-10px) rotate(5deg); }
+}
+
+.quality-modal h3 {
+  margin: 15px 0 10px;
+  font-size: 18px;
+  color: #1a472a;
+}
+
+.quality-modal p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.quality-progress {
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.quality-checklist {
+  text-align: left;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.check-item .check-icon {
+  width: 24px;
+  text-align: center;
+}
+
+.check-item.pass {
+  color: #4CAF50;
+}
+
+.check-item.pass .check-icon::after {
+  content: "✅";
+}
+
+.check-item.fail {
+  color: #f44336;
+}
+
+.check-item.fail .check-icon::after {
+  content: "❌";
+}
+
+/* ============================================
+   🔥 절약금액 강조
+   ============================================ */
+.savings-highlight {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 12px;
+  padding: 15px 20px;
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  animation: savingsPulse 2s ease infinite;
+}
+
+@keyframes savingsPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.savings-icon {
+  font-size: 32px;
+}
+
+.savings-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.savings-text span {
+  font-size: 12px;
+  color: #333;
+}
+
+.savings-text strong {
+  font-size: 24px;
+  color: #c41e3a;
+  font-weight: 800;
+}
+
+/* ============================================
+   🔥 개인정보 동의
+   ============================================ */
+.privacy-consent {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.consent-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.consent-checkbox input {
+  width: 20px;
+  height: 20px;
+  accent-color: #1a472a;
+}
+
+.consent-text a {
+  color: #1a472a;
+  font-weight: bold;
+}
+
+.privacy-notice {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* ============================================
+   🔥 업로드 버튼 스타일
+   ============================================ */
+.upload-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.upload-btn {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover {
+  border-color: #1a472a;
+  background: #f0f7f0;
+}
+
+.upload-btn.camera {
+  border-color: #4CAF50;
+  color: #4CAF50;
+}
+
+.upload-btn.gallery {
+  border-color: #2196F3;
+  color: #2196F3;
+}
+
+/* ============================================
+   🔥 모달
+   ============================================ */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  max-width: 400px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-body h4 {
+  margin: 15px 0 8px;
+  color: #1a472a;
+}
+
+.modal-body p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.notice {
+  font-size: 12px;
+  color: #f44336;
+  margin-top: 5px;
 }
