@@ -3,9 +3,21 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ============================================
+// 이메일 설정 (Gmail)
+// ============================================
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER, // 예: santa.moment.official@gmail.com
+    pass: process.env.GMAIL_APP_PASSWORD // Gmail 앱 비밀번호 (16자리)
+  }
+});
 
 // ============================================
 // Health Check
@@ -30,7 +42,7 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
-// Multer 설정 (사진 업로드)
+// Multer 설정
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = './uploads';
@@ -47,14 +59,13 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 // ============================================
 // 주문 저장소 (JSON 파일로 영구 저장)
 // ============================================
-const ORDERS_FILE = './data/orders.json';
+const DATA_DIR = './data';
+const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 
-// 데이터 폴더 생성
-if (!fs.existsSync('./data')) {
-  fs.mkdirSync('./data', { recursive: true });
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// 기존 주문 불러오기
 let ordersData = {};
 if (fs.existsSync(ORDERS_FILE)) {
   try {
@@ -66,7 +77,6 @@ if (fs.existsSync(ORDERS_FILE)) {
   }
 }
 
-// Map 대신 객체 사용 + 자동 저장
 const orders = {
   _data: ordersData,
   
@@ -96,52 +106,28 @@ const orders = {
 // 가격 설정
 // ============================================
 const PRICING = {
-  tripwire: {
-    id: 'tripwire',
-    name: '산타 포착 사진',
-    emoji: '📸',
-    price: 1900,
-    originalPrice: 5000
-  },
-  core: {
-    id: 'core',
-    name: '산타의 선물 세트',
-    emoji: '🎁',
-    price: 9900,
-    originalPrice: 25000,
-    badge: '가장 인기 ⭐'
-  },
-  premium: {
-    id: 'premium',
-    name: '산타의 마법 영상',
-    emoji: '🎬',
-    price: 24900,
-    originalPrice: 59000
-  }
+  tripwire: { id: 'tripwire', price: 1900, originalPrice: 5000, name: '산타 포착 사진' },
+  core: { id: 'core', price: 9900, originalPrice: 25000, name: '산타의 선물 세트' },
+  premium: { id: 'premium', price: 24900, originalPrice: 59000, name: '산타의 마법 영상' }
 };
 
 const BUMP_OFFERS = {
   certificate: { id: 'certificate', price: 2900, name: '착한아이 인증서' },
   extraPhoto: { id: 'extraPhoto', price: 3900, name: '추가 사진 2장' },
-  rush: { id: 'rush', price: 4900, name: '30분 급행' },
-  letter: { id: 'letter', price: 2900, name: '산타 손편지' }
+  rush: { id: 'rush', price: 4900, name: '30분 급행' }
 };
 
 // ============================================
 // 페이지 라우팅
 // ============================================
-
-// 주문 조회 페이지
 app.get('/order', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'order.html'));
 });
 
-// 결제 성공 페이지
 app.get('/payment/success', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'success.html'));
 });
 
-// 결제 실패 페이지
 app.get('/payment/fail', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'fail.html'));
 });
@@ -164,7 +150,7 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
 // API - 결제 준비
 // ============================================
 app.post('/api/payment/prepare', (req, res) => {
-  const { orderId, amount, packageId, bumpOffers = [], childInfo, photoFilename } = req.body;
+  const { orderId, amount, packageId, bumpOffers = [], childInfo, photoFilename, customerEmail } = req.body;
 
   const selectedPackage = PRICING[packageId];
   if (!selectedPackage) {
@@ -178,12 +164,13 @@ app.post('/api/payment/prepare', (req, res) => {
     childName: childInfo?.name || '',
     childAge: childInfo?.age || '',
     parentMessage: childInfo?.message || '',
+    customerEmail: customerEmail || '', // 🔥 고객 이메일 추가
     photoFilename,
     basePrice: selectedPackage.price,
     bumpOffers,
     totalPrice: amount,
     status: 'pending',
-    createdAt: new Date(),
+    createdAt: new Date().toISOString(),
     paymentStatus: 'unpaid'
   };
 
@@ -191,56 +178,6 @@ app.post('/api/payment/prepare', (req, res) => {
   console.log('✅ 주문 준비:', orderId, '₩' + amount);
 
   res.json({ success: true, orderId, amount });
-});
-
-// ============================================
-// API - 주문 생성 (기존 호환)
-// ============================================
-app.post('/api/orders', (req, res) => {
-  const { packageId, childName, parentMessage, photoPath, contact, bumpOffers = [] } = req.body;
-
-  const selectedPackage = PRICING[packageId];
-  if (!selectedPackage) {
-    return res.status(400).json({ error: '잘못된 패키지입니다' });
-  }
-
-  let totalPrice = selectedPackage.price;
-  const selectedBumps = [];
-  
-  bumpOffers.forEach(bumpId => {
-    if (BUMP_OFFERS[bumpId]) {
-      totalPrice += BUMP_OFFERS[bumpId].price;
-      selectedBumps.push(BUMP_OFFERS[bumpId]);
-    }
-  });
-
-  const orderId = 'SANTA-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex').toUpperCase();
-
-  const order = {
-    orderId,
-    packageId,
-    packageName: selectedPackage.name,
-    childName,
-    parentMessage: parentMessage || '',
-    photoPath,
-    contact,
-    basePrice: selectedPackage.price,
-    bumpOffers: selectedBumps,
-    totalPrice,
-    status: 'pending',
-    createdAt: new Date(),
-    paymentStatus: 'unpaid'
-  };
-
-  orders.set(orderId, order);
-
-  res.json({
-    success: true,
-    orderId,
-    totalPrice,
-    orderName: `${selectedPackage.emoji} ${selectedPackage.name}`,
-    order
-  });
 });
 
 // ============================================
@@ -274,10 +211,17 @@ app.post('/api/payments/confirm', async (req, res) => {
     if (response.ok) {
       order.paymentStatus = 'paid';
       order.paymentKey = paymentKey;
-      order.paidAt = new Date();
+      order.paidAt = new Date().toISOString();
       order.status = 'processing';
+      orders.set(orderId, order);
 
       console.log(`✅ 결제 성공: ${orderId} - ₩${amount.toLocaleString()}`);
+
+      // 🔥 관리자에게 새 주문 알림 이메일 발송
+      sendAdminNotification(order);
+
+      // 🔥 고객에게 주문 확인 이메일 발송
+      sendCustomerConfirmation(order);
 
       res.json({ 
         success: true, 
@@ -298,6 +242,155 @@ app.post('/api/payments/confirm', async (req, res) => {
 });
 
 // ============================================
+// 🔥 이메일 발송 함수들
+// ============================================
+
+// 관리자에게 새 주문 알림
+async function sendAdminNotification(order) {
+  if (!process.env.GMAIL_USER) {
+    console.log('⚠️ 이메일 설정 없음 - 알림 스킵');
+    return;
+  }
+
+  const photoUrl = order.photoFilename 
+    ? `${process.env.BASE_URL || 'http://localhost:3000'}/uploads/${order.photoFilename}`
+    : '사진 없음';
+
+  const mailOptions = {
+    from: process.env.GMAIL_USER,
+    to: process.env.ADMIN_EMAIL || process.env.GMAIL_USER,
+    subject: `🎅 새 주문! ${order.childName} - ${order.packageName} (₩${order.totalPrice.toLocaleString()})`,
+    html: `
+      <h2>🎅 새 주문이 들어왔습니다!</h2>
+      <hr>
+      <p><strong>주문번호:</strong> ${order.orderId}</p>
+      <p><strong>아이 이름:</strong> ${order.childName}</p>
+      <p><strong>나이:</strong> ${order.childAge || '미입력'}</p>
+      <p><strong>메시지:</strong> ${order.parentMessage || '없음'}</p>
+      <p><strong>패키지:</strong> ${order.packageName}</p>
+      <p><strong>금액:</strong> ₩${order.totalPrice.toLocaleString()}</p>
+      <p><strong>고객 이메일:</strong> ${order.customerEmail}</p>
+      <hr>
+      <p><strong>📸 고객 사진:</strong></p>
+      <p><a href="${photoUrl}">${photoUrl}</a></p>
+      <hr>
+      <p>제작 완료 후 고객 이메일로 구글드라이브 링크를 보내주세요!</p>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 관리자 알림 발송 완료: ${order.orderId}`);
+  } catch (error) {
+    console.error('관리자 알림 발송 실패:', error);
+  }
+}
+
+// 고객에게 주문 확인 이메일
+async function sendCustomerConfirmation(order) {
+  if (!process.env.GMAIL_USER || !order.customerEmail) {
+    console.log('⚠️ 이메일 설정 없음 또는 고객 이메일 없음');
+    return;
+  }
+
+  const mailOptions = {
+    from: `"산타를 만난 순간" <${process.env.GMAIL_USER}>`,
+    to: order.customerEmail,
+    subject: `🎅 주문이 완료되었어요! ${order.childName}의 산타 사진을 준비중입니다`,
+    html: `
+      <div style="max-width: 500px; margin: 0 auto; font-family: sans-serif;">
+        <h2 style="color: #c41e3a;">🎅 주문이 완료되었습니다!</h2>
+        <p>안녕하세요! <strong>${order.childName}</strong> 부모님,</p>
+        <p>주문이 성공적으로 접수되었어요. AI 전문가 팀이 정성껏 제작하고 있습니다.</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+          <p><strong>📦 주문 정보</strong></p>
+          <p>주문번호: ${order.orderId}</p>
+          <p>패키지: ${order.packageName}</p>
+          <p>결제금액: ₩${order.totalPrice.toLocaleString()}</p>
+        </div>
+        
+        <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0;">
+          <p><strong>📩 완성 후 안내</strong></p>
+          <p>제작이 완료되면 이 이메일 주소로 <strong>다운로드 링크</strong>를 보내드립니다.</p>
+          <p>예상 소요시간: ${order.bumpOffers?.includes('rush') ? '30분~1시간' : '6~24시간'}</p>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">
+          문의: santa.moment.official@gmail.com
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 고객 확인 메일 발송 완료: ${order.customerEmail}`);
+  } catch (error) {
+    console.error('고객 확인 메일 발송 실패:', error);
+  }
+}
+
+// 🔥 고객에게 완성 파일 전달 (관리자가 호출)
+app.post('/api/admin/send-delivery', async (req, res) => {
+  const { orderId, driveLink, message } = req.body;
+  
+  const order = orders.get(orderId);
+  if (!order) {
+    return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
+  }
+
+  if (!order.customerEmail) {
+    return res.status(400).json({ error: '고객 이메일이 없습니다' });
+  }
+
+  const mailOptions = {
+    from: `"산타를 만난 순간" <${process.env.GMAIL_USER}>`,
+    to: order.customerEmail,
+    subject: `🎁 산타가 도착했어요! ${order.childName}의 크리스마스 선물`,
+    html: `
+      <div style="max-width: 500px; margin: 0 auto; font-family: sans-serif;">
+        <h2 style="color: #c41e3a;">🎅 산타가 도착했어요!</h2>
+        <p>안녕하세요! <strong>${order.childName}</strong> 부모님,</p>
+        <p>드디어 산타 사진/영상이 완성되었습니다!</p>
+        
+        <div style="background: #fff9c4; padding: 20px; border-radius: 10px; margin: 20px 0; text-align: center;">
+          <p><strong>🎁 다운로드 링크</strong></p>
+          <a href="${driveLink}" style="display: inline-block; background: #c41e3a; color: white; padding: 15px 30px; border-radius: 25px; text-decoration: none; font-weight: bold;">
+            📥 사진/영상 다운로드
+          </a>
+        </div>
+        
+        ${message ? `<p style="background: #e3f2fd; padding: 15px; border-radius: 10px;">${message}</p>` : ''}
+        
+        <p>💡 <strong>사용 팁:</strong> 크리스마스 아침에 아이에게 "어젯밤 이상한 소리 나서 확인해봤는데..." 하면서 보여주세요!</p>
+        
+        <p style="color: #666; font-size: 14px;">
+          ${order.childName}에게 마법 같은 크리스마스가 되길 바랍니다! 🎄<br>
+          - 산타를 만난 순간 팀 드림
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    
+    // 상태 업데이트
+    order.status = 'completed';
+    order.deliveryLink = driveLink;
+    order.deliveredAt = new Date().toISOString();
+    orders.set(orderId, order);
+
+    console.log(`📧 완성 파일 전달 완료: ${order.customerEmail}`);
+    res.json({ success: true, message: '이메일 발송 완료!' });
+  } catch (error) {
+    console.error('완성 파일 전달 실패:', error);
+    res.status(500).json({ error: '이메일 발송 실패: ' + error.message });
+  }
+});
+
+// ============================================
 // API - 주문 조회
 // ============================================
 app.get('/api/orders/:orderId', (req, res) => {
@@ -309,34 +402,16 @@ app.get('/api/orders/:orderId', (req, res) => {
 });
 
 // ============================================
-// API - 결제 성공 데이터
-// ============================================
-app.get('/api/payment/success', (req, res) => {
-  const { orderId } = req.query;
-  const order = orders.get(orderId);
-  
-  if (!order) {
-    return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
-  }
-
-  res.json({
-    success: true,
-    order
-  });
-});
-
-// ============================================
-// 관리자 API - 주문 목록
+// 관리자 API
 // ============================================
 app.get('/api/admin/orders', (req, res) => {
-  const allOrders = Array.from(orders.values())
+  const allOrders = orders.values()
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   
   const stats = {
     total: allOrders.length,
     pending: allOrders.filter(o => o.status === 'pending').length,
     processing: allOrders.filter(o => o.status === 'processing').length,
-    ready: allOrders.filter(o => o.status === 'ready').length,
     completed: allOrders.filter(o => o.status === 'completed').length,
     revenue: allOrders
       .filter(o => o.paymentStatus === 'paid')
@@ -346,9 +421,6 @@ app.get('/api/admin/orders', (req, res) => {
   res.json({ orders: allOrders, stats });
 });
 
-// ============================================
-// 관리자 API - 상태 변경
-// ============================================
 app.put('/api/admin/orders/:orderId/status', (req, res) => {
   const { status } = req.body;
   const order = orders.get(req.params.orderId);
@@ -358,72 +430,10 @@ app.put('/api/admin/orders/:orderId/status', (req, res) => {
   }
 
   order.status = status;
-  if (status === 'completed') {
-    order.completedAt = new Date();
-  }
+  orders.set(req.params.orderId, order);
 
   res.json({ success: true, order });
 });
-
-// ============================================
-// 관리자 API - 완성 파일 업로드
-// ============================================
-const deliveryStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = './uploads/delivery';
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).substr(2, 9)}${ext}`);
-  }
-});
-
-const deliveryUpload = multer({
-  storage: deliveryStorage,
-  limits: { fileSize: 100 * 1024 * 1024 }
-});
-
-app.post('/api/admin/upload', deliveryUpload.fields([
-  { name: 'photos', maxCount: 5 },
-  { name: 'video', maxCount: 1 }
-]), (req, res) => {
-  const { orderId } = req.body;
-  
-  const order = orders.get(orderId);
-  if (!order) {
-    return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
-  }
-  
-  const deliveryFiles = {
-    photos: [],
-    video: null
-  };
-  
-  if (req.files['photos']) {
-    deliveryFiles.photos = req.files['photos'].map(f => `/uploads/delivery/${f.filename}`);
-  }
-  
-  if (req.files['video'] && req.files['video'][0]) {
-    deliveryFiles.video = `/uploads/delivery/${req.files['video'][0].filename}`;
-  }
-  
-  order.deliveryFiles = deliveryFiles;
-  order.status = 'ready';
-  order.completedAt = new Date();
-  
-  console.log(`✅ 주문 완성: ${orderId}`);
-  
-  res.json({
-    success: true,
-    orderId,
-    deliveryFiles
-  });
-});
-
-// 배달 파일 접근
-app.use('/uploads/delivery', express.static('uploads/delivery'));
 
 // ============================================
 // 서버 시작
@@ -431,10 +441,9 @@ app.use('/uploads/delivery', express.static('uploads/delivery'));
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🎅 산타를 만난 순간 - 서버 시작!`);
   console.log(`🌐 PORT: ${PORT}`);
-  console.log(`✅ Health check: /health`);
+  console.log(`📧 이메일: ${process.env.GMAIL_USER ? '설정됨' : '미설정'}`);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
   server.close(() => {
