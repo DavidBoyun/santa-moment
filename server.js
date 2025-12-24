@@ -312,12 +312,12 @@ app.get('/api/orders/:orderId', (req, res) => {
 
 // 결제 성공 페이지
 app.get('/payment/success', (req, res) => {
-  res.sendFile(path.join(__dirname, 'success.html'));
+  res.sendFile(path.join(__dirname, 'public', 'success.html'));
 });
 
 // 결제 실패 페이지
 app.get('/payment/fail', (req, res) => {
-  res.sendFile(path.join(__dirname, 'fail.html'));
+  res.sendFile(path.join(__dirname, 'public', 'fail.html'));
 });
 
 app.get('/api/payment/success', (req, res) => {
