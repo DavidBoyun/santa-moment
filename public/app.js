@@ -1,363 +1,560 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>🎅 산타를 만난 순간 | 우리 집에 온 산타 증거</title>
-  <script src="https://js.tosspayments.com/v1/payment"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <!-- 실시간 주문 알림 -->
-  <div class="order-notification" id="orderNotification">
-    <div class="notif-icon">🎁</div>
-    <div class="notif-content">
-      <strong id="notifName">김**</strong>님이 <span id="notifPackage">산타의 선물 세트</span>를 주문했어요!
-    </div>
-  </div>
+/**
+ * 🎅 산타를 만난 순간 - Frontend
+ */
 
-  <!-- 품질 체크 오버레이 -->
-  <div class="quality-overlay" id="qualityOverlay">
-    <div class="quality-modal">
-      <div class="santa-checking">🎅</div>
-      <h3 id="qualityTitle">산타가 사진을 확인중이에요...</h3>
-      <p id="qualityMessage">AI 합성에 적합한지 검사하고 있어요</p>
-      <div class="quality-progress">
-        <div class="progress-bar" id="qualityProgressBar"></div>
-      </div>
-      <div class="quality-checklist">
-        <div class="check-item" id="checkBrightness"><span class="check-icon">⏳</span><span>밝기 확인</span></div>
-        <div class="check-item" id="checkSharpness"><span class="check-icon">⏳</span><span>흔들림 확인</span></div>
-        <div class="check-item" id="checkResolution"><span class="check-icon">⏳</span><span>해상도 확인</span></div>
-      </div>
-    </div>
-  </div>
+const APP_STATE = {
+  currentStep: 1,
+  uploadedPhoto: null,
+  childInfo: { name: '', age: '', message: '' },
+  customerEmail: '',
+  selectedPackage: null,
+  bumpOffers: [],
+  privacyAgreed: false
+};
 
-  <div class="app-container">
-    <!-- 긴급성 배너 -->
-    <div class="urgency-banner">
-      <span class="pulse-dot"></span>
-      <span>🎄 크리스마스 특가! <strong id="countdown">--:--</strong> 후 종료</span>
-      <span class="slots">남은 자리: <strong id="remainingSlots">47</strong>명</span>
-    </div>
+const PRICING = {
+  tripwire: { id: 'tripwire', price: 1900, originalPrice: 5000, name: '산타 포착 사진' },
+  core: { id: 'core', price: 9900, originalPrice: 25000, name: '산타의 선물 세트' },
+  premium: { id: 'premium', price: 24900, originalPrice: 59000, name: '산타의 마법 영상' }
+};
 
-    <!-- 헤더 -->
-    <header class="header">
-      <h1>🎅 산타를 만난 순간</h1>
-      <p class="tagline">아이에게 평생 잊지 못할 크리스마스를 선물하세요</p>
-    </header>
+const BUMP_OFFERS = {
+  certificate: { id: 'certificate', price: 2900, name: '착한아이 인증서' },
+  extraPhoto: { id: 'extraPhoto', price: 3900, name: '추가 사진 2장' },
+  rush: { id: 'rush', price: 4900, name: '30분 급행' }
+};
 
-    <!-- STEP 1: 사진 업로드 -->
-    <section class="step-section active" id="step1">
-      <div class="step-header">
-        <span class="step-badge">STEP 1</span>
-        <h2>거실 사진을 찍어주세요</h2>
-        <p>산타가 선물을 놓고 갈 공간이에요</p>
-      </div>
+let TOSS_CLIENT_KEY = '';
 
-      <div class="upload-area" id="uploadArea">
-        <div class="upload-placeholder" id="uploadPlaceholder">
-          <span class="upload-icon">📷</span>
-          <p>터치하여 사진 선택</p>
-          <span class="upload-hint">트리나 거실이 잘 보이게 촬영해주세요</span>
-        </div>
-        <div class="upload-buttons">
-          <button type="button" class="upload-btn camera" id="cameraBtn">📷 카메라</button>
-          <button type="button" class="upload-btn gallery" id="galleryBtn">🖼️ 앨범</button>
-        </div>
-        <input type="file" id="photoInput" accept="image/*" hidden>
-      </div>
+// ============================================
+// 초기화
+// ============================================
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch('/api/config');
+    const config = await res.json();
+    TOSS_CLIENT_KEY = config.tossClientKey;
+  } catch (e) {
+    TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+  }
+  
+  initCountdown();
+  initUploader();
+  initFormValidation();
+  initPackageSelection();
+  initBumpOffers();
+  initPrivacyConsent();
+  initPayment();
+  initNavigation();
+  renderReviews();
+  startOrderNotifications();
+});
 
-      <div class="preview-container" id="previewContainer" style="display:none;">
-        <img id="previewImage" src="" alt="미리보기">
-        <div class="quality-badge" id="qualityBadge">
-          <span class="quality-score">품질: <strong>--</strong>점</span>
-        </div>
-        <button class="btn-retry" id="retryBtn">다시 찍기</button>
-      </div>
+// ============================================
+// 카운트다운
+// ============================================
+function initCountdown() {
+  const el = document.getElementById('countdown');
+  if (!el) return;
+  
+  const christmas = new Date('2024-12-26T00:00:00+09:00');
+  
+  setInterval(() => {
+    const diff = christmas - new Date();
+    if (diff <= 0) { el.textContent = '종료!'; return; }
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    el.textContent = `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }, 1000);
+}
 
-      <button class="btn-primary" id="nextStep1" disabled>다음 단계로 →</button>
+// ============================================
+// 사진 업로드 + 품질 체크
+// ============================================
+function initUploader() {
+  const uploadArea = document.getElementById('uploadArea');
+  const photoInput = document.getElementById('photoInput');
+  const cameraBtn = document.getElementById('cameraBtn');
+  const galleryBtn = document.getElementById('galleryBtn');
+  const retryBtn = document.getElementById('retryBtn');
+  
+  if (!photoInput) return;
+  
+  cameraBtn?.addEventListener('click', () => {
+    photoInput.setAttribute('capture', 'environment');
+    photoInput.click();
+  });
+  
+  galleryBtn?.addEventListener('click', () => {
+    photoInput.removeAttribute('capture');
+    photoInput.click();
+  });
+  
+  document.getElementById('uploadPlaceholder')?.addEventListener('click', () => {
+    photoInput.removeAttribute('capture');
+    photoInput.click();
+  });
+  
+  photoInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handlePhotoUpload(e.target.files[0]);
+  });
+  
+  retryBtn?.addEventListener('click', () => {
+    photoInput.value = '';
+    document.getElementById('uploadArea').style.display = 'block';
+    document.getElementById('previewContainer').style.display = 'none';
+    document.getElementById('nextStep1').disabled = true;
+    APP_STATE.uploadedPhoto = null;
+  });
+}
 
-      <div class="social-proof">
-        <div class="proof-item"><strong>147</strong><span>오늘 주문</span></div>
-        <div class="proof-item"><strong>⭐ 4.9</strong><span>만족도</span></div>
-        <div class="proof-item"><strong>99%</strong><span>아이 반응</span></div>
-      </div>
-    </section>
+async function handlePhotoUpload(file) {
+  const overlay = document.getElementById('qualityOverlay');
+  const uploadArea = document.getElementById('uploadArea');
+  const previewContainer = document.getElementById('previewContainer');
+  const previewImage = document.getElementById('previewImage');
+  const qualityBadge = document.getElementById('qualityBadge');
+  const nextBtn = document.getElementById('nextStep1');
+  
+  // 미리보기
+  const reader = new FileReader();
+  reader.onload = (e) => { previewImage.src = e.target.result; };
+  reader.readAsDataURL(file);
+  
+  // 오버레이 표시
+  overlay?.classList.add('show');
+  
+  try {
+    const result = await checkImageQuality(file);
+    overlay?.classList.remove('show');
+    
+    uploadArea.style.display = 'none';
+    previewContainer.style.display = 'block';
+    
+    if (result.pass) {
+      // 서버 업로드
+      const formData = new FormData();
+      formData.append('photo', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      
+      if (data.success) {
+        APP_STATE.uploadedPhoto = data.filename;
+        qualityBadge.querySelector('strong').textContent = result.score;
+        qualityBadge.classList.add('quality-good');
+        nextBtn.disabled = false;
+        showToast('✅ 완벽한 사진이에요!', 'success');
+      }
+    } else {
+      qualityBadge.querySelector('strong').textContent = result.score;
+      qualityBadge.classList.add('quality-bad');
+      nextBtn.disabled = true;
+      showToast('⚠️ ' + result.message, 'warning');
+    }
+  } catch (e) {
+    overlay?.classList.remove('show');
+    uploadArea.style.display = 'none';
+    previewContainer.style.display = 'block';
+    APP_STATE.uploadedPhoto = file;
+    nextBtn.disabled = false;
+  }
+}
 
-    <!-- STEP 2: 정보 입력 + 이메일 -->
-    <section class="step-section" id="step2">
-      <div class="step-header">
-        <span class="step-badge">STEP 2</span>
-        <h2>정보를 입력해주세요</h2>
-        <p>산타가 아이 이름을 불러줄 거예요</p>
-      </div>
-
-      <div class="form-card">
-        <div class="form-group">
-          <label for="childName">아이 이름 <span class="required">*</span></label>
-          <input type="text" id="childName" placeholder="예: 민준이" maxlength="10">
-        </div>
+async function checkImageQuality(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const scale = Math.min(200 / img.width, 200 / img.height);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
-        <div class="form-group">
-          <label for="childAge">나이</label>
-          <select id="childAge">
-            <option value="">선택</option>
-            <option value="3">3세</option>
-            <option value="4">4세</option>
-            <option value="5">5세</option>
-            <option value="6">6세</option>
-            <option value="7">7세</option>
-            <option value="8">8세 이상</option>
-          </select>
-        </div>
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // 밝기
+        let totalBrightness = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          totalBrightness += (data[i] + data[i+1] + data[i+2]) / 3;
+        }
+        const avgBrightness = totalBrightness / (data.length / 4);
+        const brightnessOk = avgBrightness > 50 && avgBrightness < 210;
+        
+        updateCheck('checkBrightness', brightnessOk);
+        updateProgress(33);
+        
+        // 선명도 (라플라시안)
+        setTimeout(() => {
+          let sharpness = 0;
+          for (let y = 1; y < canvas.height - 1; y++) {
+            for (let x = 1; x < canvas.width - 1; x++) {
+              const idx = (y * canvas.width + x) * 4;
+              const lap = Math.abs(
+                -data[idx - canvas.width*4] - data[idx-4] + 
+                4*data[idx] - data[idx+4] - data[idx + canvas.width*4]
+              );
+              sharpness += lap;
+            }
+          }
+          const avgSharpness = sharpness / (canvas.width * canvas.height);
+          const sharpnessOk = avgSharpness > 12;
+          
+          updateCheck('checkSharpness', sharpnessOk);
+          updateProgress(66);
+          
+          // 해상도
+          setTimeout(() => {
+            const resOk = img.width >= 400 && img.height >= 400;
+            updateCheck('checkResolution', resOk);
+            updateProgress(100);
+            
+            setTimeout(() => {
+              const allPass = brightnessOk && sharpnessOk && resOk;
+              let score = 50;
+              if (brightnessOk) score += 20;
+              if (sharpnessOk) score += 20;
+              if (resOk) score += 10;
+              
+              let msg = '';
+              if (!brightnessOk) msg = '사진이 너무 어둡거나 밝아요';
+              else if (!sharpnessOk) msg = '사진이 흔들렸어요. 다시 찍어주세요';
+              else if (!resOk) msg = '해상도가 낮아요';
+              
+              const title = document.getElementById('qualityTitle');
+              const message = document.getElementById('qualityMessage');
+              if (title) title.textContent = allPass ? '✅ 완벽해요!' : '⚠️ 다시 찍어주세요';
+              if (message) message.textContent = allPass ? '산타 합성에 딱 좋은 사진!' : msg;
+              
+              resolve({ pass: allPass, score, message: msg });
+            }, 500);
+          }, 400);
+        }, 400);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-        <div class="form-group">
-          <label for="santaMessage">산타에게 전할 말</label>
-          <textarea id="santaMessage" placeholder="예: 올해 정말 착하게 지냈어요!" maxlength="100"></textarea>
-          <span class="char-count"><span id="charCount">0</span>/100</span>
-        </div>
+function updateCheck(id, pass) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.querySelector('.check-icon').textContent = pass ? '✅' : '❌';
+}
 
-        <div class="form-group">
-          <label for="customerEmail">이메일 주소 <span class="required">*</span></label>
-          <input type="email" id="customerEmail" placeholder="결과물을 받으실 이메일">
-          <span class="email-hint">📩 완성된 산타 사진/영상을 이메일로 보내드려요</span>
-        </div>
+function updateProgress(pct) {
+  const bar = document.getElementById('qualityProgressBar');
+  if (bar) bar.style.width = pct + '%';
+}
+
+// ============================================
+// 폼 검증 (이메일 포함)
+// ============================================
+function initFormValidation() {
+  const childName = document.getElementById('childName');
+  const childAge = document.getElementById('childAge');
+  const santaMessage = document.getElementById('santaMessage');
+  const charCount = document.getElementById('charCount');
+  const customerEmail = document.getElementById('customerEmail');
+  const nextBtn = document.getElementById('nextStep2');
+  
+  function validate() {
+    const nameOk = childName?.value.trim().length >= 1;
+    const emailOk = customerEmail?.value.includes('@');
+    nextBtn.disabled = !(nameOk && emailOk);
+  }
+  
+  childName?.addEventListener('input', () => {
+    APP_STATE.childInfo.name = childName.value.trim();
+    validate();
+    const display = document.getElementById('childNameDisplay');
+    if (display) display.textContent = childName.value.trim() || '아이';
+  });
+  
+  childAge?.addEventListener('change', () => {
+    APP_STATE.childInfo.age = childAge.value;
+  });
+  
+  santaMessage?.addEventListener('input', () => {
+    APP_STATE.childInfo.message = santaMessage.value;
+    if (charCount) charCount.textContent = santaMessage.value.length;
+  });
+  
+  customerEmail?.addEventListener('input', () => {
+    APP_STATE.customerEmail = customerEmail.value.trim();
+    validate();
+  });
+}
+
+// ============================================
+// 패키지 선택
+// ============================================
+function initPackageSelection() {
+  document.querySelectorAll('.price-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      APP_STATE.selectedPackage = card.dataset.package;
+      updatePriceSummary();
+      checkPaymentReady();
+    });
+  });
+}
+
+function initBumpOffers() {
+  document.querySelectorAll('.bump-item input').forEach(bump => {
+    bump.addEventListener('change', () => {
+      if (bump.checked) APP_STATE.bumpOffers.push(bump.value);
+      else APP_STATE.bumpOffers = APP_STATE.bumpOffers.filter(b => b !== bump.value);
+      updatePriceSummary();
+    });
+  });
+}
+
+function initPrivacyConsent() {
+  document.getElementById('privacyAgree')?.addEventListener('change', (e) => {
+    APP_STATE.privacyAgreed = e.target.checked;
+    checkPaymentReady();
+  });
+}
+
+function checkPaymentReady() {
+  const btn = document.getElementById('payButton');
+  if (btn) btn.disabled = !(APP_STATE.selectedPackage && APP_STATE.privacyAgreed);
+}
+
+function updatePriceSummary() {
+  if (!APP_STATE.selectedPackage) return;
+  
+  const pkg = PRICING[APP_STATE.selectedPackage];
+  let total = pkg.price;
+  let original = pkg.originalPrice;
+  
+  document.getElementById('summaryPackage').textContent = `${pkg.name} ₩${pkg.price.toLocaleString()}`;
+  
+  const bumpNames = [];
+  APP_STATE.bumpOffers.forEach(id => {
+    const bump = BUMP_OFFERS[id];
+    if (bump) { total += bump.price; original += bump.price; bumpNames.push(bump.name); }
+  });
+  
+  const bumpsRow = document.getElementById('summaryBumpsRow');
+  if (bumpNames.length > 0) {
+    document.getElementById('summaryBumps').textContent = bumpNames.join(', ');
+    bumpsRow.style.display = 'flex';
+  } else {
+    bumpsRow.style.display = 'none';
+  }
+  
+  document.getElementById('summaryTotal').textContent = `₩${total.toLocaleString()}`;
+  document.getElementById('savingsAmount').textContent = `₩${(original - total).toLocaleString()}`;
+}
+
+// ============================================
+// 네비게이션
+// ============================================
+function initNavigation() {
+  document.getElementById('nextStep1')?.addEventListener('click', () => goToStep(2));
+  document.getElementById('backStep2')?.addEventListener('click', () => goToStep(1));
+  document.getElementById('nextStep2')?.addEventListener('click', () => goToStep(3));
+  document.getElementById('backStep3')?.addEventListener('click', () => goToStep(2));
+}
+
+function goToStep(step) {
+  document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`step${step}`)?.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================
+// 결제
+// ============================================
+function initPayment() {
+  document.getElementById('payButton')?.addEventListener('click', processPayment);
+}
+
+async function processPayment() {
+  if (!APP_STATE.selectedPackage || !APP_STATE.privacyAgreed || !APP_STATE.customerEmail) {
+    showToast('필수 정보를 확인해주세요', 'warning');
+    return;
+  }
+  
+  const pkg = PRICING[APP_STATE.selectedPackage];
+  let total = pkg.price;
+  APP_STATE.bumpOffers.forEach(id => { if (BUMP_OFFERS[id]) total += BUMP_OFFERS[id].price; });
+  
+  const orderId = `SANTA-${Date.now()}-${Math.random().toString(36).substr(2,9)}`;
+  
+  localStorage.setItem('lastOrder', JSON.stringify({
+    orderId, childName: APP_STATE.childInfo.name, packageName: pkg.name, amount: total
+  }));
+  
+  try {
+    await fetch('/api/payment/prepare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId, amount: total,
+        packageId: APP_STATE.selectedPackage,
+        bumpOffers: APP_STATE.bumpOffers,
+        childInfo: APP_STATE.childInfo,
+        customerEmail: APP_STATE.customerEmail,
+        photoFilename: APP_STATE.uploadedPhoto
+      })
+    });
+    
+    const toss = TossPayments(TOSS_CLIENT_KEY);
+    await toss.requestPayment('카드', {
+      amount: total,
+      orderId,
+      orderName: `🎅 ${pkg.name}`,
+      customerName: APP_STATE.childInfo.name + ' 보호자',
+      successUrl: `${location.origin}/payment/success`,
+      failUrl: `${location.origin}/payment/fail`
+    });
+  } catch (e) {
+    if (e.code !== 'USER_CANCEL') showToast('결제 오류: ' + e.message, 'error');
+  }
+}
+
+// ============================================
+// FAQ 토글
+// ============================================
+function toggleFaq(el) {
+  const item = el.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  
+  // 모두 닫기
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  
+  // 클릭한 것만 토글
+  if (!isOpen) item.classList.add('open');
+}
+
+// ============================================
+// 47개 리뷰 렌더링
+// ============================================
+function renderReviews() {
+  const container = document.getElementById('reviewsContainer');
+  if (!container) return;
+  
+  const reviews = [
+    { name: '김**맘', text: '아이가 사진 보고 "엄마 진짜 산타야!!" 하면서 눈물 글썽거렸어요 ㅠㅠ 평생 간직할 추억이 됐습니다', date: '12.24' },
+    { name: '이**', text: '퀄리티가 진짜 미쳤어요!! 그림자랑 조명까지 완벽해서 합성인지 전혀 모르겠어요', date: '12.24' },
+    { name: '박**', text: '급행으로 했는데 20분만에 왔어요! 크리스마스 아침에 보여줬는데 아이가 뛰어다녔어요', date: '12.24' },
+    { name: '최**맘', text: '작년에도 했는데 올해도 또 했어요! 아이가 아직도 작년 사진 보면서 좋아해요', date: '12.23' },
+    { name: '정**', text: '영상까지 했는데 산타가 움직이면서 선물 놓는 거 보고 아이가 소리질렀어요 ㅋㅋ', date: '12.23' },
+    { name: '강**맘', text: '7살 딸이 산타 안 믿기 시작했는데 이거 보여주니까 다시 믿어요 ㅋㅋ', date: '12.23' },
+    { name: '조**', text: '처음엔 반신반의했는데 결과물 보고 입 떡 벌어졌어요. 너무 자연스러워요', date: '12.23' },
+    { name: '윤**', text: '아이 둘이서 서로 "내가 착해서 산타 온 거야" 싸워요 ㅋㅋ 행복한 크리스마스!', date: '12.22' },
+    { name: '장**맘', text: '가격 대비 퀄리티 미쳤어요. 이 가격에 이 퀄리티? 5만원 받아도 할 것 같아요', date: '12.22' },
+    { name: '임**', text: '남편이 "이거 어떻게 한 거야?" 하면서 한참 들여다봤어요 ㅋㅋ', date: '12.22' },
+    { name: '한**맘', text: '6살 아들이 사진 들고 유치원 갔어요. 친구들한테 자랑한대요 ㅎㅎ', date: '12.22' },
+    { name: '신**', text: '우리 집 거실이랑 너무 잘 맞아서 깜빡 속을 뻔했어요 진짜', date: '12.22' },
+    { name: '서**맘', text: '인증서까지 받았는데 아이가 벽에 붙여놨어요 ㅋㅋ 너무 좋아해요', date: '12.21' },
+    { name: '권**', text: '이메일로 바로 와서 편했어요. 다운로드도 쉽고요!', date: '12.21' },
+    { name: '황**맘', text: '친정엄마한테 보여드렸더니 깜짝 놀라셨어요 ㅋㅋ 진짜인 줄', date: '12.21' },
+    { name: '안**', text: '4살 딸이 "산타 또 와?" 하면서 매일 물어봐요 귀여워 죽겠어요', date: '12.21' },
+    { name: '송**맘', text: '급행 추가했는데 정말 30분 만에 왔어요! 믿고 맡기세요', date: '12.21' },
+    { name: '류**', text: '작년에 다른 데서 했는데 별로였거든요. 여긴 진짜 다르네요', date: '12.20' },
+    { name: '홍**맘', text: '사진 3장 다 다른 포즈라 골라서 보여주기 좋아요', date: '12.20' },
+    { name: '문**', text: '아이가 "산타 할아버지 우리 집 알아?" 하면서 신기해해요', date: '12.20' },
+    { name: '양**맘', text: '트리 옆에 산타가 서있는 거 보고 아이가 멍때렸어요 ㅋㅋ', date: '12.20' },
+    { name: '배**', text: '영상에서 산타가 손 흔드는 거 보고 아이가 따라 흔들었어요 ㅠㅠ', date: '12.20' },
+    { name: '백**맘', text: '시댁에서도 신기해하셨어요 ㅋㅋ 시어머니가 저한테 뭐냐고', date: '12.19' },
+    { name: '노**', text: '5살 조카 선물로 해줬는데 언니가 너무 좋아했어요!', date: '12.19' },
+    { name: '하**맘', text: '둘째도 해줘야 할 것 같아서 추가 주문했어요 ㅋㅋ', date: '12.19' },
+    { name: '전**', text: '거실 조명이랑 완벽하게 맞춰주셨어요 대박', date: '12.19' },
+    { name: '심**맘', text: '아이가 산타 사진 액자에 넣어달라고 해서 넣어줬어요', date: '12.19' },
+    { name: '오**', text: '인스타에 올렸더니 다들 어떻게 한 거냐고 물어봐요 ㅋㅋ', date: '12.18' },
+    { name: '주**맘', text: '8살인데도 완전 믿어요 ㅋㅋ 순수해서 그런가', date: '12.18' },
+    { name: '우**', text: '선물 놓는 포즈가 진짜 자연스러워요 감탄했어요', date: '12.18' },
+    { name: '민**맘', text: '아이 방에서 찍은 사진으로 했는데 너무 잘 나왔어요!', date: '12.18' },
+    { name: '유**', text: '처음엔 좀 걱정했는데 결과물 받고 걱정이 사라졌어요', date: '12.18' },
+    { name: '나**맘', text: '크리스마스 선물 중에 이게 제일 반응 좋았어요 ㅋㅋ', date: '12.17' },
+    { name: '차**', text: '빠른 답변이랑 친절한 서비스 감사해요!', date: '12.17' },
+    { name: '성**맘', text: '매년 하기로 했어요 ㅋㅋ 아이가 커도 계속 할 예정', date: '12.17' },
+    { name: '곽**', text: '영상 퀄리티가 생각보다 훨씬 좋아서 놀랐어요', date: '12.17' },
+    { name: '변**맘', text: '이웃집 아이도 해주고 싶을 정도예요 추천합니다!', date: '12.17' },
+    { name: '공**', text: '산타 표정이 진짜 자연스러워요 AI 맞아요? ㅋㅋ', date: '12.16' },
+    { name: '진**맘', text: '아이가 매일 사진 보면서 산타 얘기해요 ㅠㅠ 감동', date: '12.16' },
+    { name: '남**', text: '친구들한테도 추천했어요 다들 만족하더라고요', date: '12.16' },
+    { name: '여**맘', text: '가족 단톡방에 올렸더니 다들 신기해해요', date: '12.16' },
+    { name: '도**', text: '배경이 우리 집이라 더 실감나요 완전 추천!', date: '12.16' },
+    { name: '추**맘', text: '아이가 "나 착하게 살았지?" 하면서 확인해요 ㅋㅋ', date: '12.15' },
+    { name: '엄**', text: '사진 인화해서 거실에 걸어뒀어요 손님들 다 놀라요', date: '12.15' },
+    { name: '표**맘', text: '내년에도 꼭 하려고요! 가격도 착하고 퀄리티도 최고', date: '12.15' },
+    { name: '감**', text: '우리 아이 크리스마스 최고의 선물이었어요 감사합니다', date: '12.15' },
+    { name: '채**맘', text: '아이가 산타 할아버지 팬이 됐어요 ㅋㅋㅋ 너무 좋아해요', date: '12.15' }
+  ];
+  
+  container.innerHTML = reviews.map(r => `
+    <div class="review-card">
+      <div class="review-header">
+        <span class="reviewer">${r.name}</span>
+        <span class="review-rating">⭐⭐⭐⭐⭐</span>
       </div>
-
-      <div class="btn-group">
-        <button class="btn-secondary" id="backStep2">← 이전</button>
-        <button class="btn-primary" id="nextStep2" disabled>다음 →</button>
-      </div>
-    </section>
-
-    <!-- STEP 3: 패키지 선택 -->
-    <section class="step-section" id="step3">
-      <div class="step-header">
-        <span class="step-badge">STEP 3</span>
-        <h2><span id="childNameDisplay">아이</span>를 위한 패키지</h2>
-      </div>
-
-      <div class="packages">
-        <div class="price-card" data-package="tripwire">
-          <div class="price-header">
-            <span class="package-emoji">📸</span>
-            <h3>산타 포착 사진</h3>
-          </div>
-          <div class="price-body">
-            <div class="price">
-              <span class="original">₩5,000</span>
-              <span class="current">₩1,900</span>
-            </div>
-            <div class="discount-badge">62% 할인</div>
-            <ul class="features">
-              <li>✓ 산타 합성 사진 1장</li>
-              <li>✓ 고화질 다운로드</li>
-              <li>✓ 24시간 내 이메일 전달</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="price-card popular" data-package="core">
-          <div class="popular-badge">🔥 가장 인기</div>
-          <div class="price-header">
-            <span class="package-emoji">🎁</span>
-            <h3>산타의 선물 세트</h3>
-          </div>
-          <div class="price-body">
-            <div class="price">
-              <span class="original">₩25,000</span>
-              <span class="current">₩9,900</span>
-            </div>
-            <div class="discount-badge">60% 할인</div>
-            <ul class="features">
-              <li>✓ 산타 합성 사진 3장</li>
-              <li>✓ 착한아이 인증서</li>
-              <li>✓ 12시간 내 이메일 전달</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="price-card" data-package="premium">
-          <div class="price-header">
-            <span class="package-emoji">🎬</span>
-            <h3>산타의 마법 영상</h3>
-          </div>
-          <div class="price-body">
-            <div class="price">
-              <span class="original">₩59,000</span>
-              <span class="current">₩24,900</span>
-            </div>
-            <div class="discount-badge">58% 할인</div>
-            <ul class="features">
-              <li>✓ 사진 5장 + 영상 1편</li>
-              <li>✓ 산타 음성 메시지</li>
-              <li>✓ 6시간 급행 제작</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- 범프 오퍼 -->
-      <div class="bump-offers">
-        <h4>🎄 추가 옵션</h4>
-        <label class="bump-item">
-          <input type="checkbox" name="bump" value="certificate">
-          <div class="bump-content">
-            <div class="bump-info"><span class="bump-icon">🎖️</span><span>착한아이 인증서</span></div>
-            <span class="bump-price">+₩2,900</span>
-          </div>
-        </label>
-        <label class="bump-item">
-          <input type="checkbox" name="bump" value="extraPhoto">
-          <div class="bump-content">
-            <div class="bump-info"><span class="bump-icon">📸</span><span>추가 사진 2장</span></div>
-            <span class="bump-price">+₩3,900</span>
-          </div>
-        </label>
-        <label class="bump-item">
-          <input type="checkbox" name="bump" value="rush">
-          <div class="bump-content">
-            <div class="bump-info"><span class="bump-icon">⚡</span><span>30분 급행</span></div>
-            <span class="bump-price">+₩4,900</span>
-          </div>
-        </label>
-      </div>
-
-      <!-- 가격 요약 -->
-      <div class="price-summary">
-        <div class="summary-row">
-          <span>선택 패키지</span>
-          <span id="summaryPackage">-</span>
-        </div>
-        <div class="summary-row" id="summaryBumpsRow" style="display:none;">
-          <span>추가 옵션</span>
-          <span id="summaryBumps">-</span>
-        </div>
-        <div class="summary-row total">
-          <span>총 결제금액</span>
-          <span id="summaryTotal">₩0</span>
-        </div>
-        <div class="savings-highlight" id="savingsRow">
-          <div class="savings-icon">🎉</div>
-          <div class="savings-text">
-            <span>지금 결제하면</span>
-            <strong id="savingsAmount">₩0</strong>
-            <span>절약!</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 개인정보 동의 -->
-      <div class="privacy-consent">
-        <label class="consent-checkbox">
-          <input type="checkbox" id="privacyAgree">
-          <span class="consent-text">[필수] <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보 처리방침</a>에 동의합니다</span>
-        </label>
-        <p class="privacy-notice">📌 업로드된 사진은 제작 완료 후 7일 이내 자동 삭제됩니다.</p>
-      </div>
-
-      <div class="btn-group">
-        <button class="btn-secondary" id="backStep3">← 이전</button>
-        <button class="btn-primary btn-pay" id="payButton" disabled>
-          <span class="btn-icon">🔒</span>
-          <span>안전하게 결제하기</span>
-        </button>
-      </div>
-
-      <div class="payment-info">
-        <div class="payment-methods">
-          <span>💳 카드</span>
-          <span>📱 토스페이</span>
-          <span>🏦 계좌이체</span>
-        </div>
-        <p class="guarantee">✅ 결과물 불만족 시 100% 환불 보장</p>
-      </div>
-    </section>
-
-    <!-- 리뷰 섹션 (47개) -->
-    <section class="review-section">
-      <h3>💬 부모님들의 생생한 후기</h3>
-      <div class="review-stats">
-        <span class="review-score">⭐ 4.9</span>
-        <span class="review-count">47개 리뷰</span>
-      </div>
-      <div class="reviews-container" id="reviewsContainer"></div>
-    </section>
-
-    <!-- FAQ (토글 작동) -->
-    <section class="faq-section">
-      <h3>❓ 자주 묻는 질문</h3>
-      <div class="faq-list">
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>진짜처럼 보이나요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">네! AI 전문가와 디자이너가 직접 제작하고 검수합니다. 자연스러운 조명과 그림자까지 세밀하게 조정해요.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>얼마나 걸리나요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">패키지에 따라 6~24시간 내 이메일로 전달됩니다. 급행 옵션 선택 시 30분 내 가능해요!</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>결과물은 어떻게 받나요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">입력하신 이메일로 구글 드라이브 다운로드 링크를 보내드립니다. 바로 다운받아 저장하실 수 있어요.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>개인정보는 안전한가요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">업로드된 사진은 제작 목적으로만 사용되며, 완료 후 7일 이내 완전히 삭제됩니다. 제3자 제공은 절대 없습니다.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>환불 가능한가요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">결과물 불만족 시 100% 환불해드립니다. 단, 제작 시작 후에는 환불이 어려울 수 있어요.</div>
-        </div>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <p>© 2024 산타를 만난 순간</p>
-      <p class="footer-links">
-        <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보처리방침</a> | 
-        <a href="mailto:santa.moment.official@gmail.com">문의하기</a>
-      </p>
-    </footer>
-  </div>
-
-  <!-- 개인정보 모달 -->
-  <div class="modal" id="privacyModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>개인정보 처리방침</h3>
-        <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <h4>1. 수집하는 개인정보</h4>
-        <p>아이 이름, 나이, 이메일 주소, 업로드된 사진, 결제 정보</p>
-        <h4>2. 이용 목적</h4>
-        <p>산타 합성 콘텐츠 제작 및 전달</p>
-        <h4>3. 보유 및 파기</h4>
-        <p>사진: 7일 이내 삭제 / 이메일: 30일 이내 삭제 / 결제정보: 5년 보관</p>
-        <h4>4. 제3자 제공</h4>
-        <p>절대 없음</p>
-      </div>
-      <button class="btn-primary" onclick="closeModal('privacyModal')">확인</button>
+      <p class="review-text">${r.text}</p>
+      <span class="review-date">2024.${r.date}</span>
     </div>
-  </div>
+  `).join('');
+}
 
-  <script src="app.js"></script>
-</body>
-</html>
+// ============================================
+// 실시간 주문 알림
+// ============================================
+function startOrderNotifications() {
+  const names = ['김**','이**','박**','최**','정**','강**','조**','윤**','장**','임**','한**','신**','서**','권**','황**'];
+  const packages = ['산타 포착 사진','산타의 선물 세트','산타의 마법 영상'];
+  
+  function show() {
+    const notif = document.getElementById('orderNotification');
+    const name = document.getElementById('notifName');
+    const pkg = document.getElementById('notifPackage');
+    if (!notif) return;
+    
+    name.textContent = names[Math.floor(Math.random() * names.length)];
+    pkg.textContent = packages[Math.floor(Math.random() * packages.length)];
+    
+    notif.classList.add('show');
+    setTimeout(() => notif.classList.remove('show'), 4000);
+  }
+  
+  setTimeout(() => {
+    show();
+    setInterval(show, 20000 + Math.random() * 10000);
+  }, 8000);
+}
+
+// ============================================
+// 유틸리티
+// ============================================
+function showToast(msg, type = 'info') {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = msg;
+  toast.style.cssText = `
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+    background:${type==='success'?'#4CAF50':type==='warning'?'#ff9800':'#333'};
+    color:white; padding:12px 24px; border-radius:25px; z-index:9999;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function showPrivacyPolicy() {
+  document.getElementById('privacyModal')?.classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id)?.classList.remove('show');
+}
