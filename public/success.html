@@ -3,307 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎉 결제 완료 - 산타를 만난 순간</title>
-  <link rel="stylesheet" href="/style.css">
+  <title>✅ 결제 완료 - 산타를 만난 순간</title>
   <style>
-    .success-container {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      text-align: center;
-      background: linear-gradient(135deg, #1a472a 0%, #2d5016 100%);
-    }
-    .success-card {
-      background: white;
-      border-radius: 20px;
-      padding: 40px;
-      max-width: 500px;
-      width: 100%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    .success-icon {
-      font-size: 80px;
-      margin-bottom: 20px;
-      animation: bounce 1s ease infinite;
-    }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-    .success-title {
-      font-size: 28px;
-      color: #1a472a;
-      margin-bottom: 10px;
-    }
-    .success-message {
-      color: #666;
-      margin-bottom: 30px;
-      line-height: 1.6;
-    }
-    .order-info {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 30px;
-      text-align: left;
-    }
-    .order-info h3 {
-      margin: 0 0 15px 0;
-      color: #1a472a;
-      font-size: 16px;
-    }
-    .order-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px dashed #ddd;
-    }
-    .order-row:last-child {
-      border-bottom: none;
-      font-weight: bold;
-      color: #c41e3a;
-    }
-    .timeline {
-      text-align: left;
-      margin-bottom: 30px;
-    }
-    .timeline-item {
-      display: flex;
-      align-items: flex-start;
-      margin-bottom: 15px;
-    }
-    .timeline-icon {
-      width: 30px;
-      height: 30px;
-      background: #1a472a;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 14px;
-      margin-right: 15px;
-      flex-shrink: 0;
-    }
-    .timeline-icon.active {
-      background: #c41e3a;
-      animation: pulse 1.5s ease infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(196, 30, 58, 0.4); }
-      50% { box-shadow: 0 0 0 10px rgba(196, 30, 58, 0); }
-    }
-    .timeline-content h4 {
-      margin: 0 0 5px 0;
-      font-size: 14px;
-    }
-    .timeline-content p {
-      margin: 0;
-      font-size: 12px;
-      color: #888;
-    }
-    .contact-info {
-      background: #fff3cd;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    .btn-home {
-      display: inline-block;
-      background: #1a472a;
-      color: white;
-      padding: 15px 30px;
-      border-radius: 25px;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    .snowflake {
-      position: fixed;
-      color: white;
-      opacity: 0.8;
-      animation: fall linear infinite;
-      pointer-events: none;
-    }
-    @keyframes fall {
-      0% { transform: translateY(-100vh) rotate(0deg); }
-      100% { transform: translateY(100vh) rotate(360deg); }
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Pretendard', -apple-system, sans-serif; background: linear-gradient(135deg, #1a472a, #2d5016); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .card { background: white; border-radius: 20px; padding: 40px 30px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .icon { font-size: 60px; margin-bottom: 20px; }
+    h1 { color: #1a472a; margin-bottom: 10px; }
+    .order-id { background: #f8f9fa; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; margin: 20px 0; word-break: break-all; }
+    .info-box { background: #e8f5e9; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: left; }
+    .info-box h3 { color: #1a472a; margin-bottom: 10px; font-size: 16px; }
+    .info-box p { color: #555; font-size: 14px; line-height: 1.6; }
+    .highlight { background: #fff9c4; padding: 15px; border-radius: 10px; margin: 20px 0; }
+    .highlight strong { color: #c41e3a; }
+    .btn { display: inline-block; background: #1a472a; color: white; padding: 15px 30px; border-radius: 25px; text-decoration: none; margin-top: 20px; }
   </style>
 </head>
 <body>
-  <div id="snowflakes"></div>
-  
-  <div class="success-container">
-    <div class="success-card">
-      <div class="success-icon">🎅</div>
-      <h1 class="success-title">결제가 완료되었어요!</h1>
-      <p class="success-message">
-        산타 할아버지가 열심히 준비하고 있어요!<br>
-        조금만 기다려주세요 ✨
-      </p>
-
-      <div class="order-info">
-        <h3>📋 주문 정보</h3>
-        <div class="order-row">
-          <span>주문번호</span>
-          <span id="orderId">-</span>
-        </div>
-        <div class="order-row">
-          <span>패키지</span>
-          <span id="packageName">-</span>
-        </div>
-        <div class="order-row">
-          <span>아이 이름</span>
-          <span id="childName">-</span>
-        </div>
-        <div class="order-row">
-          <span>결제금액</span>
-          <span id="totalAmount">-</span>
-        </div>
-      </div>
-
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="timeline-icon">✓</div>
-          <div class="timeline-content">
-            <h4>결제 완료</h4>
-            <p>방금 완료되었어요</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-icon active">🎨</div>
-          <div class="timeline-content">
-            <h4>산타 마법 제작 중...</h4>
-            <p>AI가 열심히 합성하고 있어요</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-icon">📱</div>
-          <div class="timeline-content">
-            <h4>카카오톡 전송</h4>
-            <p>완성되면 바로 보내드려요</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="contact-info">
-        💡 <strong>예상 소요시간:</strong> 30분~2시간<br>
-        📞 문의: 카카오톡 @santa-moment
-      </div>
-
-      <div style="background: #e8f5e9; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-        📌 <strong>이 링크를 저장하세요!</strong><br>
-        완성되면 아래 링크에서 다운로드할 수 있어요.<br>
-        <a href="#" id="orderLink" style="color: #1a472a; word-break: break-all;"></a>
-        <br><br>
-        <button onclick="copyOrderLink()" style="background: #1a472a; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
-          📋 링크 복사하기
-        </button>
-      </div>
-
-      <a href="/" class="btn-home">🏠 홈으로 돌아가기</a>
+  <div class="card">
+    <div class="icon">🎅✅</div>
+    <h1>결제가 완료되었어요!</h1>
+    <p>산타 할아버지가 열심히 준비하고 있어요</p>
+    
+    <div class="order-id" id="orderId">주문번호 확인 중...</div>
+    
+    <div class="info-box">
+      <h3>📩 결과물 받는 방법</h3>
+      <p>입력하신 이메일로 완성된 사진/영상 다운로드 링크를 보내드립니다.</p>
+      <p style="margin-top:10px;"><strong>예상 소요시간:</strong> 6~24시간</p>
     </div>
+    
+    <div class="highlight">
+      <p>📌 <strong>이메일 스팸함도 확인해주세요!</strong></p>
+    </div>
+    
+    <p style="color:#666;font-size:14px;">문의: santa.moment.official@gmail.com</p>
+    
+    <a href="/" class="btn">🏠 홈으로</a>
   </div>
 
   <script>
-    // URL 파라미터에서 정보 추출
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderId = urlParams.get('orderId');
-    const paymentKey = urlParams.get('paymentKey');
-    const amount = urlParams.get('amount');
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get('orderId');
+    const paymentKey = params.get('paymentKey');
+    const amount = params.get('amount');
     
-    // 주문 정보 표시
-    if (orderId) {
-      document.getElementById('orderId').textContent = orderId;
-    }
-    if (amount) {
-      document.getElementById('totalAmount').textContent = 
-        parseInt(amount).toLocaleString() + '원';
-    }
-
-    // 🔥 결제 승인 처리 (핵심!)
-    async function confirmPayment() {
-      if (!paymentKey || !orderId || !amount) {
-        console.log('결제 정보 부족 - 이미 처리됨');
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/payments/confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentKey, orderId, amount: parseInt(amount) })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('✅ 결제 승인 완료!', result);
-        } else {
-          console.error('❌ 결제 승인 실패:', result);
-          alert('결제 승인 중 문제가 발생했습니다. 고객센터로 연락 주세요.');
-        }
-      } catch (error) {
-        console.error('결제 승인 오류:', error);
-      }
-    }
-
-    // 페이지 로드 시 결제 승인
-    confirmPayment();
+    document.getElementById('orderId').textContent = orderId || '확인 불가';
     
-    // 주문조회 링크 설정
-    const orderLink = `${window.location.origin}/order?id=${orderId}`;
-    const orderLinkEl = document.getElementById('orderLink');
-    if (orderLinkEl && orderId) {
-      orderLinkEl.href = orderLink;
-      orderLinkEl.textContent = orderLink;
+    // 결제 승인
+    if (paymentKey && orderId && amount) {
+      fetch('/api/payments/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentKey, orderId, amount: parseInt(amount) })
+      }).then(res => res.json()).then(data => {
+        if (data.success) console.log('✅ 결제 승인 완료');
+        else console.error('❌ 결제 승인 실패:', data.error);
+      }).catch(e => console.error('결제 승인 오류:', e));
     }
-    
-    function copyOrderLink() {
-      navigator.clipboard.writeText(orderLink).then(() => {
-        alert('링크가 복사되었습니다! 저장해두세요 📌');
-      });
-    }
-    
-    // 로컬스토리지에서 추가 정보 가져오기
-    const savedOrder = localStorage.getItem('lastOrder');
-    if (savedOrder) {
-      try {
-        const order = JSON.parse(savedOrder);
-        if (order.childName) {
-          const el = document.getElementById('childName');
-          if (el) el.textContent = order.childName;
-        }
-        if (order.packageName) {
-          const el = document.getElementById('packageName');
-          if (el) el.textContent = order.packageName;
-        }
-      } catch (e) {}
-    }
-
-    // 눈 내리는 효과
-    function createSnowflakes() {
-      const container = document.getElementById('snowflakes');
-      if (!container) return;
-      const snowflakeChars = ['❄', '❅', '❆', '✻', '✼'];
-      
-      for (let i = 0; i < 50; i++) {
-        const snowflake = document.createElement('div');
-        snowflake.className = 'snowflake';
-        snowflake.textContent = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
-        snowflake.style.left = Math.random() * 100 + 'vw';
-        snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
-        snowflake.style.animationDelay = Math.random() * 5 + 's';
-        snowflake.style.fontSize = (Math.random() * 15 + 10) + 'px';
-        container.appendChild(snowflake);
-      }
-    }
-    
-    createSnowflakes();
   </script>
 </body>
 </html>
