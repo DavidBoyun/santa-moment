@@ -44,8 +44,53 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// 주문 저장소 (실제로는 DB 사용)
-const orders = new Map();
+// ============================================
+// 주문 저장소 (JSON 파일로 영구 저장)
+// ============================================
+const ORDERS_FILE = './data/orders.json';
+
+// 데이터 폴더 생성
+if (!fs.existsSync('./data')) {
+  fs.mkdirSync('./data', { recursive: true });
+}
+
+// 기존 주문 불러오기
+let ordersData = {};
+if (fs.existsSync(ORDERS_FILE)) {
+  try {
+    ordersData = JSON.parse(fs.readFileSync(ORDERS_FILE, 'utf8'));
+    console.log(`📦 기존 주문 ${Object.keys(ordersData).length}건 로드됨`);
+  } catch (e) {
+    console.log('⚠️ 주문 파일 로드 실패, 새로 시작');
+    ordersData = {};
+  }
+}
+
+// Map 대신 객체 사용 + 자동 저장
+const orders = {
+  _data: ordersData,
+  
+  get(orderId) {
+    return this._data[orderId] || null;
+  },
+  
+  set(orderId, order) {
+    this._data[orderId] = order;
+    this._save();
+  },
+  
+  values() {
+    return Object.values(this._data);
+  },
+  
+  _save() {
+    try {
+      fs.writeFileSync(ORDERS_FILE, JSON.stringify(this._data, null, 2));
+    } catch (e) {
+      console.error('주문 저장 실패:', e);
+    }
+  }
+};
 
 // ============================================
 // 가격 설정
