@@ -14,12 +14,14 @@ app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-// ✅ 토스페이먼츠 설정 API - 클라이언트 키 전달
+// ✅ 토스페이먼츠 설정 API
 app.get('/api/config', (req, res) => {
   res.json({
     tossClientKey: process.env.TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq'
   });
 });
+
+
 
 // Middleware
 app.use(express.json());
@@ -148,37 +150,16 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
 // ì£¼ë¬¸ ìƒì„±
 
 // ============================================
-// 🔥 결제 준비 (app.js가 호출하는 API)
+// 🔥 결제 준비 API
 // ============================================
 app.post('/api/payment/prepare', (req, res) => {
-  const { 
-    orderId,
-    amount,
-    packageId, 
-    bumpOffers = [],
-    childInfo,
-    photoFilename
-  } = req.body;
+  const { orderId, amount, packageId, bumpOffers = [], childInfo, photoFilename } = req.body;
 
-  // 패키지 확인
   const selectedPackage = PRICING[packageId];
   if (!selectedPackage) {
     return res.status(400).json({ success: false, message: '잘못된 패키지입니다' });
   }
 
-  // 금액 검증
-  let expectedAmount = selectedPackage.price;
-  bumpOffers.forEach(bumpId => {
-    if (BUMP_OFFERS[bumpId]) {
-      expectedAmount += BUMP_OFFERS[bumpId].price;
-    }
-  });
-
-  if (amount !== expectedAmount) {
-    console.log(`⚠️ 금액 불일치: 요청=${amount}, 예상=${expectedAmount}`);
-  }
-
-  // 주문 저장
   const order = {
     orderId,
     packageId,
@@ -196,14 +177,9 @@ app.post('/api/payment/prepare', (req, res) => {
   };
 
   orders.set(orderId, order);
+  console.log('✅ 주문 준비:', orderId, '₩' + amount);
 
-  console.log(`✅ 주문 준비 완료: ${orderId} - ₩${amount.toLocaleString()}`);
-
-  res.json({
-    success: true,
-    orderId,
-    amount
-  });
+  res.json({ success: true, orderId, amount });
 });
 
 app.post('/api/orders', (req, res) => {
@@ -329,6 +305,21 @@ app.get('/api/orders/:orderId', (req, res) => {
 });
 
 // ê²°ì œ ì„±ê³µ íŽ˜ì´ì§€ ë°ì´í„°
+
+// ============================================
+// 🔥 결제 결과 페이지 라우팅
+// ============================================
+
+// 결제 성공 페이지
+app.get('/payment/success', (req, res) => {
+  res.sendFile(path.join(__dirname, 'success.html'));
+});
+
+// 결제 실패 페이지
+app.get('/payment/fail', (req, res) => {
+  res.sendFile(path.join(__dirname, 'fail.html'));
+});
+
 app.get('/api/payment/success', (req, res) => {
   const { orderId } = req.query;
   const order = orders.get(orderId);
