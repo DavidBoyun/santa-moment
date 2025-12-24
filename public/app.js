@@ -293,7 +293,7 @@ async function checkImageQuality(file) {
           totalBrightness += brightness;
         }
         const avgBrightness = totalBrightness / (data.length / 4);
-        const brightnessOk = avgBrightness > 40 && avgBrightness < 220;
+        const brightnessOk = avgBrightness > 60 && avgBrightness < 200; // 밝기 범위 좁힘
         
         setTimeout(() => {
           updateQualityCheck('checkBrightness', brightnessOk ? 'pass' : 'fail');
@@ -317,7 +317,7 @@ async function checkImageQuality(file) {
           }
         }
         const avgSharpness = sharpnessScore / (canvas.width * canvas.height);
-        const sharpnessOk = avgSharpness > 5; // 너무 흐리면 실패
+        const sharpnessOk = avgSharpness > 15; // 흔들림 임계값 높임 (5→15)
         
         setTimeout(() => {
           updateQualityCheck('checkSharpness', sharpnessOk ? 'pass' : 'fail');
