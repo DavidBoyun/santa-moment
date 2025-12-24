@@ -5,30 +5,32 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const app = express();
-
-// âœ… Railway í¬íŠ¸ - ë°˜ë“œì‹œ ì´ë ‡ê²Œ!
 const PORT = process.env.PORT || 3000;
 
-// âœ… Health check - Railwayê°€ ì„œë²„ ì‚´ì•„ìžˆëŠ”ì§€ í™•ì¸ìš©
+// ============================================
+// Health Check
+// ============================================
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-// ✅ 토스페이먼츠 설정 API
+// ============================================
+// 토스페이먼츠 설정 API
+// ============================================
 app.get('/api/config', (req, res) => {
   res.json({
     tossClientKey: process.env.TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq'
   });
 });
 
-
-
+// ============================================
 // Middleware
+// ============================================
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
-// Multer ì„¤ì •
+// Multer 설정 (사진 업로드)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = './uploads';
@@ -42,104 +44,70 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// ì£¼ë¬¸ ì €ìž¥ì†Œ (ì‹¤ì œë¡œëŠ” DB ì‚¬ìš©)
+// 주문 저장소 (실제로는 DB 사용)
 const orders = new Map();
 
 // ============================================
-// ðŸŽ¯ ëŸ¬ì…€ ë¸ŒëŸ°ìŠ¨ í¼ë„ + ìƒìœ„ 0.1% ê°€ê²© ì²´ê³„
+// 가격 설정
 // ============================================
 const PRICING = {
   tripwire: {
     id: 'tripwire',
-    name: 'ì‚°íƒ€ í¬ì°© ì‚¬ì§„',
-    emoji: 'ðŸ“¸',
+    name: '산타 포착 사진',
+    emoji: '📸',
     price: 1900,
-    originalPrice: 5000,
-    discount: 62,
-    description: 'ìš°ë¦¬ ì§‘ì— ì˜¨ ì‚°íƒ€ ì¦ê±°ì‚¬ì§„ 1ìž¥',
-    includes: ['ì‚°íƒ€ í•©ì„± ì‚¬ì§„ 1ìž¥', 'ê³ í™”ì§ˆ ë‹¤ìš´ë¡œë“œ', '24ì‹œê°„ ë‚´ ì „ë‹¬'],
-    deliveryTime: '24ì‹œê°„'
+    originalPrice: 5000
   },
-  
   core: {
     id: 'core',
-    name: 'ì‚°íƒ€ì˜ ì„ ë¬¼ ì„¸íŠ¸',
-    emoji: 'ðŸŽ',
+    name: '산타의 선물 세트',
+    emoji: '🎁',
     price: 9900,
     originalPrice: 25000,
-    discount: 60,
-    description: 'ì‚¬ì§„ 3ìž¥ + ì°©í•œì•„ì´ ì¸ì¦ì„œ',
-    includes: [
-      'ì‚°íƒ€ í•©ì„± ì‚¬ì§„ 3ìž¥ (ë‹¤ì–‘í•œ ì•µê¸€)',
-      'ì°©í•œì•„ì´ ì¸ì¦ì„œ (ì•„ì´ ì´ë¦„ í¬í•¨)',
-      'ê³ í™”ì§ˆ ë‹¤ìš´ë¡œë“œ',
-      '12ì‹œê°„ ë‚´ ì „ë‹¬'
-    ],
-    deliveryTime: '12ì‹œê°„',
-    badge: 'ê°€ìž¥ ì¸ê¸° â­'
+    badge: '가장 인기 ⭐'
   },
-  
   premium: {
     id: 'premium',
-    name: 'ì‚°íƒ€ì˜ ë§ˆë²• ì˜ìƒ',
-    emoji: 'ðŸŽ¬',
+    name: '산타의 마법 영상',
+    emoji: '🎬',
     price: 24900,
-    originalPrice: 59000,
-    discount: 58,
-    description: 'ì‚¬ì§„ + ì˜ìƒíŽ¸ì§€ + í”„ë¦¬ë¯¸ì—„ í’€íŒ¨í‚¤ì§€',
-    includes: [
-      'ì‚°íƒ€ í•©ì„± ì‚¬ì§„ 5ìž¥',
-      'ðŸŽ¬ ì‚°íƒ€ ì˜ìƒíŽ¸ì§€ (ì•„ì´ ì´ë¦„ í˜¸ëª…!)',
-      'ì°©í•œì•„ì´ ì¸ì¦ì„œ (í”„ë¦¬ë¯¸ì—„ ë””ìžì¸)',
-      'ì‚°íƒ€ ìŒì„± ë©”ì‹œì§€',
-      '6ì‹œê°„ ë‚´ ìš°ì„  ì „ë‹¬'
-    ],
-    deliveryTime: '6ì‹œê°„',
-    badge: 'VIP ðŸ‘‘'
+    originalPrice: 59000
   }
 };
 
-// Bump Offers (ê²°ì œ ì§ì „ ì¶”ê°€ ìƒí’ˆ)
 const BUMP_OFFERS = {
-  extraPhoto: {
-    id: 'extraPhoto',
-    name: 'ì¶”ê°€ ì‚¬ì§„ 2ìž¥',
-    price: 2900,
-    description: 'ë‹¤ë¥¸ ì•µê¸€ì˜ ì‚°íƒ€ ì‚¬ì§„ 2ìž¥ ì¶”ê°€'
-  },
-  framePrint: {
-    id: 'framePrint',
-    name: 'ì•¡ìž ì¸í™” ì„œë¹„ìŠ¤',
-    price: 4900,
-    description: 'í”„ë¦¬ë¯¸ì—„ ì•¡ìžì— ì¸í™”í•˜ì—¬ ë°°ì†¡'
-  },
-  voiceMessage: {
-    id: 'voiceMessage', 
-    name: 'ì‚°íƒ€ ìŒì„±ë©”ì‹œì§€',
-    price: 3900,
-    description: 'ì•„ì´ ì´ë¦„ì„ ë¶€ë¥´ëŠ” ì‚°íƒ€ ìŒì„± íŒŒì¼'
-  }
+  certificate: { id: 'certificate', price: 2900, name: '착한아이 인증서' },
+  extraPhoto: { id: 'extraPhoto', price: 3900, name: '추가 사진 2장' },
+  rush: { id: 'rush', price: 4900, name: '30분 급행' },
+  letter: { id: 'letter', price: 2900, name: '산타 손편지' }
 };
 
 // ============================================
-// API ì—”ë“œí¬ì¸íŠ¸
+// 페이지 라우팅
 // ============================================
 
-// ê°€ê²© ì •ë³´ ì¡°íšŒ
-app.get('/api/pricing', (req, res) => {
-  res.json({
-    packages: PRICING,
-    bumpOffers: BUMP_OFFERS,
-    currency: 'KRW'
-  });
+// 주문 조회 페이지
+app.get('/order', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'order.html'));
 });
 
-// ì‚¬ì§„ ì—…ë¡œë“œ
+// 결제 성공 페이지
+app.get('/payment/success', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'success.html'));
+});
+
+// 결제 실패 페이지
+app.get('/payment/fail', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'fail.html'));
+});
+
+// ============================================
+// API - 사진 업로드
+// ============================================
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: 'íŒŒì¼ì´ ì—†ìŠµë‹ˆë‹¤' });
+    return res.status(400).json({ error: '파일이 없습니다' });
   }
-  
   res.json({
     success: true,
     filename: req.file.filename,
@@ -147,10 +115,8 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
   });
 });
 
-// ì£¼ë¬¸ ìƒì„±
-
 // ============================================
-// 🔥 결제 준비 API
+// API - 결제 준비
 // ============================================
 app.post('/api/payment/prepare', (req, res) => {
   const { orderId, amount, packageId, bumpOffers = [], childInfo, photoFilename } = req.body;
@@ -182,23 +148,17 @@ app.post('/api/payment/prepare', (req, res) => {
   res.json({ success: true, orderId, amount });
 });
 
+// ============================================
+// API - 주문 생성 (기존 호환)
+// ============================================
 app.post('/api/orders', (req, res) => {
-  const { 
-    packageId, 
-    childName, 
-    parentMessage, 
-    photoPath,
-    contact,
-    bumpOffers = []
-  } = req.body;
+  const { packageId, childName, parentMessage, photoPath, contact, bumpOffers = [] } = req.body;
 
-  // íŒ¨í‚¤ì§€ í™•ì¸
   const selectedPackage = PRICING[packageId];
   if (!selectedPackage) {
-    return res.status(400).json({ error: 'ìž˜ëª»ëœ íŒ¨í‚¤ì§€ìž…ë‹ˆë‹¤' });
+    return res.status(400).json({ error: '잘못된 패키지입니다' });
   }
 
-  // ì´ ê°€ê²© ê³„ì‚°
   let totalPrice = selectedPackage.price;
   const selectedBumps = [];
   
@@ -209,10 +169,8 @@ app.post('/api/orders', (req, res) => {
     }
   });
 
-  // ì£¼ë¬¸ ID ìƒì„±
   const orderId = 'SANTA-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex').toUpperCase();
 
-  // ì£¼ë¬¸ ì €ìž¥
   const order = {
     orderId,
     packageId,
@@ -240,22 +198,22 @@ app.post('/api/orders', (req, res) => {
   });
 });
 
-// ê²°ì œ í™•ì¸ (Toss Payments ì½œë°±)
+// ============================================
+// API - 결제 승인 (토스페이먼츠)
+// ============================================
 app.post('/api/payments/confirm', async (req, res) => {
   const { paymentKey, orderId, amount } = req.body;
 
   const order = orders.get(orderId);
   if (!order) {
-    return res.status(404).json({ error: 'ì£¼ë¬¸ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤' });
+    return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
   }
 
-  // ê¸ˆì•¡ ê²€ì¦
   if (order.totalPrice !== parseInt(amount)) {
-    return res.status(400).json({ error: 'ê¸ˆì•¡ì´ ì¼ì¹˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤' });
+    return res.status(400).json({ error: '금액이 일치하지 않습니다' });
   }
 
   try {
-    // Toss Payments APIë¡œ ê²°ì œ ìŠ¹ì¸ ìš”ì²­
     const secretKey = process.env.TOSS_SECRET_KEY || 'test_sk_demo';
     const response = await fetch('https://api.tosspayments.com/v1/payments/confirm', {
       method: 'POST',
@@ -269,94 +227,62 @@ app.post('/api/payments/confirm', async (req, res) => {
     const result = await response.json();
 
     if (response.ok) {
-      // ê²°ì œ ì„±ê³µ
       order.paymentStatus = 'paid';
       order.paymentKey = paymentKey;
       order.paidAt = new Date();
       order.status = 'processing';
 
-      console.log(`âœ… ê²°ì œ ì„±ê³µ: ${orderId} - â‚©${amount.toLocaleString()}`);
+      console.log(`✅ 결제 성공: ${orderId} - ₩${amount.toLocaleString()}`);
 
       res.json({ 
         success: true, 
         order,
-        message: 'ê²°ì œê°€ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤!'
+        message: '결제가 완료되었습니다!'
       });
     } else {
-      console.log(`âŒ ê²°ì œ ì‹¤íŒ¨: ${orderId}`, result);
+      console.log(`❌ 결제 실패: ${orderId}`, result);
       res.status(400).json({ 
         success: false, 
-        error: result.message || 'ê²°ì œ ìŠ¹ì¸ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤' 
+        error: result.message || '결제 승인에 실패했습니다' 
       });
     }
   } catch (error) {
-    console.error('ê²°ì œ ì²˜ë¦¬ ì˜¤ë¥˜:', error);
-    res.status(500).json({ error: 'ê²°ì œ ì²˜ë¦¬ ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤' });
+    console.error('결제 처리 오류:', error);
+    res.status(500).json({ error: '결제 처리 중 오류가 발생했습니다' });
   }
 });
 
-// ì£¼ë¬¸ ì¡°íšŒ
+// ============================================
+// API - 주문 조회
+// ============================================
 app.get('/api/orders/:orderId', (req, res) => {
   const order = orders.get(req.params.orderId);
   if (!order) {
-    return res.status(404).json({ error: 'ì£¼ë¬¸ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤' });
+    return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
   }
   res.json(order);
 });
 
-// ê²°ì œ ì„±ê³µ íŽ˜ì´ì§€ ë°ì´í„°
-
 // ============================================
-// 🔥 결제 결과 페이지 라우팅
+// API - 결제 성공 데이터
 // ============================================
-
-
-// 주문 조회 페이지
-app.get('/order', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'order.html'));
-});
-
-// 결제 성공 페이지
-app.get('/payment/success', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'success.html'));
-});
-
-// 결제 실패 페이지
-app.get('/payment/fail', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'fail.html'));
-});
-
 app.get('/api/payment/success', (req, res) => {
   const { orderId } = req.query;
   const order = orders.get(orderId);
   
   if (!order) {
-    return res.status(404).json({ error: 'ì£¼ë¬¸ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤' });
+    return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
   }
 
   res.json({
     success: true,
-    order,
-    estimatedDelivery: getEstimatedDelivery(order.packageId)
+    order
   });
 });
 
-function getEstimatedDelivery(packageId) {
-  const hours = {
-    tripwire: 24,
-    core: 12,
-    premium: 6
-  };
-  const deliveryHours = hours[packageId] || 24;
-  const deliveryTime = new Date(Date.now() + deliveryHours * 60 * 60 * 1000);
-  return deliveryTime.toISOString();
-}
-
 // ============================================
-// ê´€ë¦¬ìž API
+// 관리자 API - 주문 목록
 // ============================================
-
-// ëª¨ë“  ì£¼ë¬¸ ì¡°íšŒ
 app.get('/api/admin/orders', (req, res) => {
   const allOrders = Array.from(orders.values())
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -365,23 +291,25 @@ app.get('/api/admin/orders', (req, res) => {
     total: allOrders.length,
     pending: allOrders.filter(o => o.status === 'pending').length,
     processing: allOrders.filter(o => o.status === 'processing').length,
+    ready: allOrders.filter(o => o.status === 'ready').length,
     completed: allOrders.filter(o => o.status === 'completed').length,
-    totalRevenue: allOrders
+    revenue: allOrders
       .filter(o => o.paymentStatus === 'paid')
-      .reduce((sum, o) => sum + o.totalPrice, 0)
+      .reduce((sum, o) => sum + (o.totalPrice || 0), 0)
   };
 
   res.json({ orders: allOrders, stats });
 });
 
-// ì£¼ë¬¸ ìƒíƒœ ì—…ë°ì´íŠ¸
+// ============================================
+// 관리자 API - 상태 변경
+// ============================================
 app.put('/api/admin/orders/:orderId/status', (req, res) => {
-  const { orderId } = req.params;
   const { status } = req.body;
+  const order = orders.get(req.params.orderId);
 
-  const order = orders.get(orderId);
   if (!order) {
-    return res.status(404).json({ error: 'ì£¼ë¬¸ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤' });
+    return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
   }
 
   order.status = status;
@@ -393,26 +321,23 @@ app.put('/api/admin/orders/:orderId/status', (req, res) => {
 });
 
 // ============================================
-// ì„œë²„ ì‹œìž‘ - Railway í˜¸í™˜
+// 관리자 API - 완성 파일 업로드
 // ============================================
-const server = 
+const deliveryStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = './uploads/delivery';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${Math.random().toString(36).substr(2, 9)}${ext}`);
+  }
+});
 
-// ============================================
-// 🔥 관리자 - 완성 파일 업로드
-// ============================================
 const deliveryUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const dir = './uploads/delivery';
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      cb(null, `${req.body.orderId}-${Date.now()}${ext}`);
-    }
-  }),
-  limits: { fileSize: 100 * 1024 * 1024 } // 100MB
+  storage: deliveryStorage,
+  limits: { fileSize: 100 * 1024 * 1024 }
 });
 
 app.post('/api/admin/upload', deliveryUpload.fields([
@@ -426,7 +351,6 @@ app.post('/api/admin/upload', deliveryUpload.fields([
     return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
   }
   
-  // 파일 경로 저장
   const deliveryFiles = {
     photos: [],
     video: null
@@ -440,7 +364,6 @@ app.post('/api/admin/upload', deliveryUpload.fields([
     deliveryFiles.video = `/uploads/delivery/${req.files['video'][0].filename}`;
   }
   
-  // 주문 업데이트
   order.deliveryFiles = deliveryFiles;
   order.status = 'ready';
   order.completedAt = new Date();
@@ -457,11 +380,13 @@ app.post('/api/admin/upload', deliveryUpload.fields([
 // 배달 파일 접근
 app.use('/uploads/delivery', express.static('uploads/delivery'));
 
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`ðŸŽ… ì‚°íƒ€ë¥¼ ë§Œë‚œ ìˆœê°„ - ì„œë²„ ì‹œìž‘!`);
-  console.log(`ðŸŒ PORT: ${PORT}`);
-  console.log(`âœ… Health check: /health`);
+// ============================================
+// 서버 시작
+// ============================================
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🎅 산타를 만난 순간 - 서버 시작!`);
+  console.log(`🌐 PORT: ${PORT}`);
+  console.log(`✅ Health check: /health`);
 });
 
 // Graceful shutdown
