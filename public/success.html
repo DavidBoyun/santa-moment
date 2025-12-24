@@ -7,16 +7,30 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Pretendard', -apple-system, sans-serif; background: linear-gradient(135deg, #1a472a, #2d5016); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .card { background: white; border-radius: 20px; padding: 40px 30px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .card { background: white; border-radius: 20px; padding: 40px 30px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
     .icon { font-size: 60px; margin-bottom: 20px; }
-    h1 { color: #1a472a; margin-bottom: 10px; }
-    .order-id { background: #f8f9fa; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; margin: 20px 0; word-break: break-all; }
-    .info-box { background: #e8f5e9; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: left; }
-    .info-box h3 { color: #1a472a; margin-bottom: 10px; font-size: 16px; }
-    .info-box p { color: #555; font-size: 14px; line-height: 1.6; }
-    .highlight { background: #fff9c4; padding: 15px; border-radius: 10px; margin: 20px 0; }
-    .highlight strong { color: #c41e3a; }
-    .btn { display: inline-block; background: #1a472a; color: white; padding: 15px 30px; border-radius: 25px; text-decoration: none; margin-top: 20px; }
+    h1 { color: #1a472a; margin-bottom: 10px; font-size: 24px; }
+    .order-id { background: #f8f9fa; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; margin: 15px 0; word-break: break-all; color: #666; }
+    
+    .queue-box { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); padding: 25px; border-radius: 16px; margin: 20px 0; }
+    .queue-position { font-size: 48px; font-weight: 800; color: #1a472a; }
+    .queue-label { font-size: 14px; color: #666; margin-bottom: 15px; }
+    .queue-detail { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); }
+    .queue-item { text-align: center; }
+    .queue-item .num { font-size: 18px; font-weight: bold; color: #1a472a; }
+    .queue-item .label { font-size: 11px; color: #666; }
+    
+    .estimate-box { background: #fff9c4; padding: 20px; border-radius: 12px; margin: 20px 0; }
+    .estimate-time { font-size: 24px; font-weight: bold; color: #c41e3a; }
+    .estimate-label { font-size: 13px; color: #666; margin-bottom: 5px; }
+    .guarantee { background: #4CAF50; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-top: 10px; font-size: 13px; font-weight: bold; }
+    .guarantee.warning { background: #ff9800; }
+    
+    .info-box { background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0; text-align: left; font-size: 14px; }
+    .info-box p { margin: 5px 0; color: #555; }
+    
+    .btn { display: inline-block; background: #1a472a; color: white; padding: 15px 30px; border-radius: 25px; text-decoration: none; margin-top: 15px; }
+    .refresh { background: none; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -25,19 +39,37 @@
     <h1>결제가 완료되었어요!</h1>
     <p>산타 할아버지가 열심히 준비하고 있어요</p>
     
-    <div class="order-id" id="orderId">주문번호 확인 중...</div>
+    <div class="order-id">주문번호: <span id="orderId">확인 중...</span></div>
+    
+    <div class="queue-box">
+      <div class="queue-label">현재 대기 순번</div>
+      <div class="queue-position"><span id="queuePosition">-</span>번째</div>
+      <div class="queue-detail">
+        <div class="queue-item">
+          <div class="num" id="totalQueue">-</div>
+          <div class="label">전체 대기</div>
+        </div>
+        <div class="queue-item">
+          <div class="num" id="avgTime">-분</div>
+          <div class="label">평균 처리</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="estimate-box">
+      <div class="estimate-label">예상 완료 시간</div>
+      <div class="estimate-time" id="estimateTime">계산 중...</div>
+      <div class="guarantee" id="guarantee">확인 중...</div>
+    </div>
     
     <div class="info-box">
-      <h3>📩 결과물 받는 방법</h3>
-      <p>입력하신 이메일로 완성된 사진/영상 다운로드 링크를 보내드립니다.</p>
-      <p style="margin-top:10px;"><strong>예상 소요시간:</strong> 3~7시간</p>
+      <p>📩 완성되면 입력하신 이메일로 다운로드 링크를 보내드립니다.</p>
+      <p>📌 스팸함도 꼭 확인해주세요!</p>
     </div>
     
-    <div class="highlight">
-      <p>📌 <strong>이메일 스팸함도 확인해주세요!</strong></p>
-    </div>
+    <button class="refresh" onclick="loadQueueStatus()">🔄 새로고침</button>
     
-    <p style="color:#666;font-size:14px;">문의: santa.moment.official@gmail.com</p>
+    <p style="color:#666;font-size:12px;margin-top:15px;">문의: santa.moment.official@gmail.com</p>
     
     <a href="/" class="btn">🏠 홈으로</a>
   </div>
@@ -50,17 +82,61 @@
     
     document.getElementById('orderId').textContent = orderId || '확인 불가';
     
-    // 결제 승인
-    if (paymentKey && orderId && amount) {
-      fetch('/api/payments/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentKey, orderId, amount: parseInt(amount) })
-      }).then(res => res.json()).then(data => {
-        if (data.success) console.log('✅ 결제 승인 완료');
-        else console.error('❌ 결제 승인 실패:', data.error);
-      }).catch(e => console.error('결제 승인 오류:', e));
+    async function init() {
+      if (paymentKey && orderId && amount) {
+        try {
+          const res = await fetch('/api/payments/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentKey, orderId, amount: parseInt(amount) })
+          });
+          const data = await res.json();
+          if (data.success) {
+            console.log('✅ 결제 승인 완료');
+            setTimeout(loadQueueStatus, 500);
+          }
+        } catch (e) {
+          console.error('결제 승인 오류:', e);
+        }
+      } else if (orderId) {
+        loadQueueStatus();
+      }
     }
+    
+    async function loadQueueStatus() {
+      if (!orderId) return;
+      
+      try {
+        const res = await fetch('/api/orders/' + orderId);
+        const data = await res.json();
+        
+        if (data.queue) {
+          document.getElementById('queuePosition').textContent = data.queue.position;
+          document.getElementById('totalQueue').textContent = data.queue.totalInQueue;
+          document.getElementById('avgTime').textContent = data.queue.avgProcessTime + '분';
+          
+          const estTime = new Date(data.queue.estimatedTime);
+          const timeStr = estTime.toLocaleString('ko-KR', {
+            month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+          document.getElementById('estimateTime').textContent = timeStr;
+          
+          const guarantee = document.getElementById('guarantee');
+          guarantee.textContent = data.queue.guaranteeText;
+          guarantee.className = 'guarantee' + (data.queue.beforeChristmas ? '' : ' warning');
+        }
+        
+        if (data.status === 'completed') {
+          document.querySelector('.queue-box').innerHTML = '<div style="font-size:48px;">🎁</div><div style="font-size:20px;font-weight:bold;color:#1a472a;margin-top:10px;">완성되었어요!</div><div style="color:#666;margin-top:5px;">이메일을 확인해주세요</div>';
+          document.querySelector('.estimate-box').style.display = 'none';
+        }
+      } catch (e) {
+        console.error('대기열 로드 실패:', e);
+      }
+    }
+    
+    init();
+    setInterval(loadQueueStatus, 30000);
   </script>
 </body>
 </html>
