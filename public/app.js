@@ -125,141 +125,151 @@ async function handlePhotoUpload(file) {
   reader.readAsDataURL(file);
   
   // 오버레이 표시
-  overlay?.classList.add('show');
+  if (overlay) overlay.classList.add('show');
   
-  try {
-    const result = await checkImageQuality(file);
-    overlay?.classList.remove('show');
+  // 품질 체크
+  const quality = await checkImageQuality(file);
+  
+  if (overlay) overlay.classList.remove('show');
+  uploadArea.style.display = 'none';
+  previewContainer.style.display = 'block';
+  
+  // 결과 표시
+  qualityBadge.innerHTML = `<span class="quality-score">품질: <strong>${quality.score}점</strong></span>`;
+  
+  if (quality.pass) {
+    // 통과 - 서버 업로드
+    const formData = new FormData();
+    formData.append('photo', file);
     
-    uploadArea.style.display = 'none';
-    previewContainer.style.display = 'block';
-    
-    if (result.pass) {
-      // 서버 업로드
-      const formData = new FormData();
-      formData.append('photo', file);
+    try {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       
       if (data.success) {
         APP_STATE.uploadedPhoto = data.filename;
-        qualityBadge.querySelector('strong').textContent = result.score;
         qualityBadge.classList.remove('quality-bad');
         qualityBadge.classList.add('quality-good');
         nextBtn.disabled = false;
         showToast('✅ 완벽한 사진이에요!', 'success');
       }
-    } else {
-      qualityBadge.querySelector('strong').textContent = result.score;
-      qualityBadge.classList.remove('quality-good');
-      qualityBadge.classList.add('quality-bad');
-      nextBtn.disabled = true;
-      showToast('⚠️ ' + result.message, 'warning');
+    } catch (e) {
+      showToast('⚠️ 업로드 실패. 다시 시도해주세요.', 'warning');
     }
-  } catch (e) {
-    console.error('품질 체크 오류:', e);
-    overlay?.classList.remove('show');
-    uploadArea.style.display = 'none';
-    previewContainer.style.display = 'block';
-    // 오류 시에도 일단 업로드는 허용하되 경고 표시
-    qualityBadge.querySelector('strong').textContent = '?';
-    qualityBadge.classList.add('quality-warning');
-    APP_STATE.uploadedPhoto = file;
-    nextBtn.disabled = false;
-    showToast('⚠️ 품질을 확인할 수 없어요. 선명한 사진인지 확인해주세요.', 'warning');
+  } else {
+    // 실패
+    qualityBadge.classList.remove('quality-good');
+    qualityBadge.classList.add('quality-bad');
+    nextBtn.disabled = true;
+    showToast('⚠️ ' + quality.message, 'warning');
   }
 }
 
-async function checkImageQuality(file) {
+function checkImageQuality(file) {
   return new Promise((resolve) => {
     const img = new Image();
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const scale = Math.min(200 / img.width, 200 / img.height);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // 밝기 체크 (더 엄격하게)
-        let totalBrightness = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          totalBrightness += (data[i] + data[i+1] + data[i+2]) / 3;
+    img.onload = () => {
+      // 캔버스에 그리기
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // 분석용 크기 (너무 작으면 정확도 떨어짐)
+      const maxSize = 300;
+      const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+      
+      // 1. 밝기 체크
+      let totalBrightness = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        totalBrightness += (pixels[i] * 0.299 + pixels[i+1] * 0.587 + pixels[i+2] * 0.114);
+      }
+      const avgBrightness = totalBrightness / (pixels.length / 4);
+      const brightnessOk = avgBrightness >= 40 && avgBrightness <= 220;
+      
+      // 2. 선명도 체크 (Laplacian variance)
+      const grayData = [];
+      for (let i = 0; i < pixels.length; i += 4) {
+        grayData.push(pixels[i] * 0.299 + pixels[i+1] * 0.587 + pixels[i+2] * 0.114);
+      }
+      
+      let laplacianSum = 0;
+      let laplacianCount = 0;
+      const w = canvas.width;
+      const h = canvas.height;
+      
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const idx = y * w + x;
+          // Laplacian 커널: [0, 1, 0], [1, -4, 1], [0, 1, 0]
+          const lap = (
+            grayData[idx - w] +
+            grayData[idx - 1] +
+            grayData[idx + 1] +
+            grayData[idx + w] -
+            4 * grayData[idx]
+          );
+          laplacianSum += lap * lap;
+          laplacianCount++;
         }
-        const avgBrightness = totalBrightness / (data.length / 4);
-        const brightnessOk = avgBrightness > 60 && avgBrightness < 200;
-        
-        updateCheck('checkBrightness', brightnessOk);
-        updateProgress(33);
-        
-        // 선명도 체크 (라플라시안, 더 엄격하게)
-        setTimeout(() => {
-          let sharpness = 0;
-          for (let y = 1; y < canvas.height - 1; y++) {
-            for (let x = 1; x < canvas.width - 1; x++) {
-              const idx = (y * canvas.width + x) * 4;
-              const lap = Math.abs(
-                -data[idx - canvas.width*4] - data[idx-4] + 
-                4*data[idx] - data[idx+4] - data[idx + canvas.width*4]
-              );
-              sharpness += lap;
-            }
-          }
-          const avgSharpness = sharpness / (canvas.width * canvas.height);
-          const sharpnessOk = avgSharpness > 15;
-          
-          updateCheck('checkSharpness', sharpnessOk);
-          updateProgress(66);
-          
-          // 해상도
-          setTimeout(() => {
-            const resOk = img.width >= 400 && img.height >= 400;
-            updateCheck('checkResolution', resOk);
-            updateProgress(100);
-            
-            setTimeout(() => {
-              const allPass = brightnessOk && sharpnessOk && resOk;
-              let score = 50;
-              if (brightnessOk) score += 20;
-              if (sharpnessOk) score += 20;
-              if (resOk) score += 10;
-              
-              let msg = '';
-              if (!brightnessOk) msg = '사진이 너무 어둡거나 밝아요';
-              else if (!sharpnessOk) msg = '사진이 흔들렸어요. 다시 찍어주세요';
-              else if (!resOk) msg = '해상도가 낮아요';
-              
-              const title = document.getElementById('qualityTitle');
-              const message = document.getElementById('qualityMessage');
-              if (title) title.textContent = allPass ? '✅ 완벽해요!' : '⚠️ 다시 찍어주세요';
-              if (message) message.textContent = allPass ? '산타 합성에 딱 좋은 사진!' : msg;
-              
-              resolve({ pass: allPass, score, message: msg });
-            }, 500);
-          }, 400);
-        }, 400);
-      };
-      img.src = e.target.result;
+      }
+      const laplacianVariance = laplacianSum / laplacianCount;
+      const sharpnessOk = laplacianVariance >= 100; // 흐릿하면 이 값이 매우 낮음
+      
+      // 3. 해상도 체크
+      const resolutionOk = img.width >= 400 && img.height >= 400;
+      
+      // UI 업데이트
+      updateCheck('checkBrightness', brightnessOk);
+      updateCheck('checkSharpness', sharpnessOk);
+      updateCheck('checkResolution', resolutionOk);
+      
+      // 점수 계산
+      let score = 0;
+      if (brightnessOk) score += 35;
+      if (sharpnessOk) score += 45;
+      if (resolutionOk) score += 20;
+      
+      const allPass = brightnessOk && sharpnessOk && resolutionOk;
+      
+      // 메시지
+      let message = '';
+      if (!brightnessOk) message = '사진이 너무 어둡거나 밝아요. 조명을 켜고 다시 찍어주세요.';
+      else if (!sharpnessOk) message = '사진이 흔들렸어요. 카메라를 고정하고 다시 찍어주세요.';
+      else if (!resolutionOk) message = '해상도가 너무 낮아요. 더 큰 사진을 올려주세요.';
+      
+      // 오버레이 텍스트 업데이트
+      const title = document.getElementById('qualityTitle');
+      const msg = document.getElementById('qualityMessage');
+      if (title) title.textContent = allPass ? '✅ 완벽해요!' : '⚠️ 다시 찍어주세요';
+      if (msg) msg.textContent = allPass ? '산타 합성에 딱 좋은 사진이에요!' : message;
+      
+      console.log('품질 체크:', { avgBrightness, laplacianVariance, brightnessOk, sharpnessOk, resolutionOk, score });
+      
+      resolve({ pass: allPass, score, message });
     };
+    
+    img.onerror = () => {
+      resolve({ pass: false, score: 0, message: '이미지를 불러올 수 없어요.' });
+    };
+    
+    // 이미지 로드
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
     reader.readAsDataURL(file);
   });
 }
 
 function updateCheck(id, pass) {
   const el = document.getElementById(id);
-  if (!el) return;
-  el.querySelector('.check-icon').textContent = pass ? '✅' : '❌';
-}
-
-function updateProgress(pct) {
-  const bar = document.getElementById('qualityProgressBar');
-  if (bar) bar.style.width = pct + '%';
+  if (el) {
+    const icon = el.querySelector('.check-icon');
+    if (icon) icon.textContent = pass ? '✅' : '❌';
+  }
 }
 
 // ============================================
