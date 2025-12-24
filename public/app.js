@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPrivacyConsent();
   initPayment();
   initNavigation();
+  initFaq();
   renderReviews();
   startOrderNotifications();
 });
@@ -427,19 +428,28 @@ async function processPayment() {
 // ============================================
 // FAQ 토글
 // ============================================
-function toggleFaq(el) {
-  const item = el.closest('.faq-item');
-  const isOpen = item.classList.contains('open');
-  
-  // 모두 닫기
-  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-  
-  // 클릭한 것만 토글
-  if (!isOpen) item.classList.add('open');
+function initFaq() {
+  document.querySelectorAll('.faq-question').forEach(q => {
+    q.addEventListener('click', function() {
+      const item = this.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      
+      // 모두 닫기
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      
+      // 클릭한 것만 토글
+      if (!isOpen) item.classList.add('open');
+    });
+  });
 }
 
-// 전역 함수로 노출 (onclick에서 사용)
-window.toggleFaq = toggleFaq;
+// 전역 함수로 노출 (onclick에서 사용 - 백업용)
+window.toggleFaq = function(el) {
+  const item = el.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+};
 window.showPrivacyPolicy = function() {
   document.getElementById('privacyModal')?.classList.add('show');
 };
