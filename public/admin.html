@@ -2,501 +2,362 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎅 관리자 - 산타를 만난 순간</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-      min-height: 100vh;
-    }
-    .header {
-      background: linear-gradient(135deg, #1a472a, #2d5016);
-      color: white;
-      padding: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .header h1 { font-size: 24px; }
-    .header-stats {
-      display: flex;
-      gap: 20px;
-    }
-    .stat-box {
-      background: rgba(255,255,255,0.2);
-      padding: 10px 20px;
-      border-radius: 10px;
-      text-align: center;
-    }
-    .stat-box .number { font-size: 24px; font-weight: bold; }
-    .stat-box .label { font-size: 12px; opacity: 0.8; }
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .refresh-btn {
-      background: #1a472a;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
-    .orders-table {
-      background: white;
-      border-radius: 15px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    table { width: 100%; border-collapse: collapse; }
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #eee;
-      font-size: 14px;
-    }
-    th { background: #f8f9fa; font-weight: 600; }
-    tr:hover { background: #f8f9fa; }
-    
-    .status-badge {
-      display: inline-block;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-    .status-pending { background: #fff3cd; color: #856404; }
-    .status-processing { background: #cce5ff; color: #004085; }
-    .status-ready { background: #d4edda; color: #155724; }
-    .status-completed { background: #d4edda; color: #155724; }
-    
-    .btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      margin: 2px;
-    }
-    .btn-primary { background: #1a472a; color: white; }
-    .btn-danger { background: #c41e3a; color: white; }
-    .btn-success { background: #28a745; color: white; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    
-    /* 모달 */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal.show { display: flex; }
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      max-width: 500px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    .form-group input[type="file"] {
-      width: 100%;
-      padding: 10px;
-      border: 2px dashed #ddd;
-      border-radius: 8px;
-    }
-    .upload-preview {
-      margin-top: 10px;
-    }
-    .upload-preview img, .upload-preview video {
-      max-width: 100%;
-      border-radius: 8px;
-    }
-    .order-detail {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .order-detail p {
-      margin: 5px 0;
-    }
-    .copy-btn {
-      background: #6c757d;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 11px;
-    }
-    .prompt-box {
-      background: #f8f9fa;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      margin: 10px 0;
-      max-height: 100px;
-      overflow-y: auto;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎅 산타를 만난 순간 | 우리 집에 온 산타 증거</title>
+  <script src="https://js.tosspayments.com/v1/payment"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="header">
-    <h1>🎅 산타를 만난 순간 - 관리자</h1>
-    <div class="header-stats">
-      <div class="stat-box">
-        <div class="number" id="totalOrders">0</div>
-        <div class="label">총 주문</div>
+  <!-- 실시간 주문 알림 -->
+  <div class="order-notification" id="orderNotification">
+    <div class="notif-icon">🎁</div>
+    <div class="notif-content">
+      <strong id="notifName">김**</strong>님이 <span id="notifPackage">산타의 선물 세트</span>를 주문했어요!
+    </div>
+  </div>
+
+  <!-- 품질 체크 오버레이 -->
+  <div class="quality-overlay" id="qualityOverlay">
+    <div class="quality-modal">
+      <div class="santa-checking">🎅</div>
+      <h3 id="qualityTitle">산타가 사진을 확인중이에요...</h3>
+      <p id="qualityMessage">AI 합성에 적합한지 검사하고 있어요</p>
+      <div class="quality-progress">
+        <div class="progress-bar" id="qualityProgressBar"></div>
       </div>
-      <div class="stat-box">
-        <div class="number" id="pendingOrders">0</div>
-        <div class="label">제작 대기</div>
-      </div>
-      <div class="stat-box">
-        <div class="number" id="totalRevenue">₩0</div>
-        <div class="label">총 매출</div>
+      <div class="quality-checklist">
+        <div class="check-item" id="checkBrightness"><span class="check-icon">⏳</span><span>밝기 확인</span></div>
+        <div class="check-item" id="checkSharpness"><span class="check-icon">⏳</span><span>흔들림 확인</span></div>
+        <div class="check-item" id="checkResolution"><span class="check-icon">⏳</span><span>해상도 확인</span></div>
       </div>
     </div>
   </div>
 
-  <div class="container">
-    <button class="refresh-btn" onclick="loadOrders()">🔄 새로고침</button>
-    
-    <div class="orders-table">
-      <table>
-        <thead>
-          <tr>
-            <th>주문번호</th>
-            <th>아이 이름</th>
-            <th>패키지</th>
-            <th>금액</th>
-            <th>상태</th>
-            <th>주문시간</th>
-            <th>관리</th>
-          </tr>
-        </thead>
-        <tbody id="ordersBody">
-          <tr>
-            <td colspan="7" style="text-align: center; padding: 40px;">
-              로딩 중...
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <div class="app-container">
+    <!-- 긴급성 배너 -->
+    <div class="urgency-banner">
+      <span class="pulse-dot"></span>
+      <span>🎄 크리스마스 특가! <strong id="countdown">--:--</strong> 후 종료</span>
+      <span class="slots">남은 자리: <strong id="remainingSlots">47</strong>명</span>
     </div>
-  </div>
 
-  <!-- 업로드 모달 -->
-  <div class="modal" id="uploadModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>📤 파일 업로드</h2>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
+    <!-- 헤더 -->
+    <header class="header">
+      <h1>🎅 산타를 만난 순간</h1>
+      <p class="tagline">아이에게 평생 잊지 못할 크리스마스를 선물하세요</p>
+    </header>
+
+    <!-- STEP 1: 사진 업로드 -->
+    <section class="step-section active" id="step1">
+      <div class="step-header">
+        <span class="step-badge">STEP 1</span>
+        <h2>거실 사진을 찍어주세요</h2>
+        <p>산타가 선물을 놓고 갈 공간이에요</p>
       </div>
-      
-      <div class="order-detail" id="modalOrderDetail">
-        <!-- 주문 정보 표시 -->
+
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-placeholder" id="uploadPlaceholder">
+          <span class="upload-icon">📷</span>
+          <p>터치하여 사진 선택</p>
+          <span class="upload-hint">트리나 거실이 잘 보이게 촬영해주세요</span>
+        </div>
+        <div class="upload-buttons">
+          <button type="button" class="upload-btn camera" id="cameraBtn">📷 카메라</button>
+          <button type="button" class="upload-btn gallery" id="galleryBtn">🖼️ 앨범</button>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" hidden>
       </div>
-      
-      <form id="uploadForm" onsubmit="submitUpload(event)">
-        <input type="hidden" id="uploadOrderId">
+
+      <div class="preview-container" id="previewContainer" style="display:none;">
+        <img id="previewImage" src="" alt="미리보기">
+        <div class="quality-badge" id="qualityBadge">
+          <span class="quality-score">품질: <strong>--</strong>점</span>
+        </div>
+        <button class="btn-retry" id="retryBtn">다시 찍기</button>
+      </div>
+
+      <button class="btn-primary" id="nextStep1" disabled>다음 단계로 →</button>
+
+      <div class="social-proof">
+        <div class="proof-item"><strong>147</strong><span>오늘 주문</span></div>
+        <div class="proof-item"><strong>⭐ 4.9</strong><span>만족도</span></div>
+        <div class="proof-item"><strong>99%</strong><span>아이 반응</span></div>
+      </div>
+    </section>
+
+    <!-- STEP 2: 정보 입력 + 이메일 -->
+    <section class="step-section" id="step2">
+      <div class="step-header">
+        <span class="step-badge">STEP 2</span>
+        <h2>정보를 입력해주세요</h2>
+        <p>산타가 아이 이름을 불러줄 거예요</p>
+      </div>
+
+      <div class="form-card">
+        <div class="form-group">
+          <label for="childName">아이 이름 <span class="required">*</span></label>
+          <input type="text" id="childName" placeholder="예: 민준이" maxlength="10">
+        </div>
         
         <div class="form-group">
-          <label>📸 사진 파일 (최대 5장)</label>
-          <input type="file" id="photoFiles" accept="image/*" multiple>
-          <div class="upload-preview" id="photoPreview"></div>
+          <label for="childAge">나이</label>
+          <select id="childAge">
+            <option value="">선택</option>
+            <option value="3">3세</option>
+            <option value="4">4세</option>
+            <option value="5">5세</option>
+            <option value="6">6세</option>
+            <option value="7">7세</option>
+            <option value="8">8세 이상</option>
+          </select>
         </div>
-        
+
         <div class="form-group">
-          <label>🎬 영상 파일 (선택)</label>
-          <input type="file" id="videoFile" accept="video/*">
-          <div class="upload-preview" id="videoPreview"></div>
+          <label for="santaMessage">산타에게 전할 말</label>
+          <textarea id="santaMessage" placeholder="예: 올해 정말 착하게 지냈어요!" maxlength="100"></textarea>
+          <span class="char-count"><span id="charCount">0</span>/100</span>
         </div>
-        
-        <button type="submit" class="btn btn-success" style="width: 100%; padding: 15px; font-size: 16px;">
-          ✅ 업로드 & 완성 처리
+
+        <div class="form-group">
+          <label for="customerEmail">이메일 주소 <span class="required">*</span></label>
+          <input type="email" id="customerEmail" placeholder="결과물을 받으실 이메일">
+          <span class="email-hint">📩 완성된 산타 사진/영상을 이메일로 보내드려요</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-secondary" id="backStep2">← 이전</button>
+        <button class="btn-primary" id="nextStep2" disabled>다음 →</button>
+      </div>
+    </section>
+
+    <!-- STEP 3: 패키지 선택 -->
+    <section class="step-section" id="step3">
+      <div class="step-header">
+        <span class="step-badge">STEP 3</span>
+        <h2><span id="childNameDisplay">아이</span>를 위한 패키지</h2>
+      </div>
+
+      <div class="packages">
+        <div class="price-card" data-package="tripwire">
+          <div class="price-header">
+            <span class="package-emoji">📸</span>
+            <h3>산타 포착 사진</h3>
+          </div>
+          <div class="price-body">
+            <div class="price">
+              <span class="original">₩5,000</span>
+              <span class="current">₩1,900</span>
+            </div>
+            <div class="discount-badge">62% 할인</div>
+            <ul class="features">
+              <li>✓ 산타 합성 사진 1장</li>
+              <li>✓ 고화질 다운로드</li>
+              <li>✓ 24시간 내 이메일 전달</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="price-card popular" data-package="core">
+          <div class="popular-badge">🔥 가장 인기</div>
+          <div class="price-header">
+            <span class="package-emoji">🎁</span>
+            <h3>산타의 선물 세트</h3>
+          </div>
+          <div class="price-body">
+            <div class="price">
+              <span class="original">₩25,000</span>
+              <span class="current">₩9,900</span>
+            </div>
+            <div class="discount-badge">60% 할인</div>
+            <ul class="features">
+              <li>✓ 산타 합성 사진 3장</li>
+              <li>✓ 착한아이 인증서</li>
+              <li>✓ 12시간 내 이메일 전달</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="price-card" data-package="premium">
+          <div class="price-header">
+            <span class="package-emoji">🎬</span>
+            <h3>산타의 마법 영상</h3>
+          </div>
+          <div class="price-body">
+            <div class="price">
+              <span class="original">₩59,000</span>
+              <span class="current">₩24,900</span>
+            </div>
+            <div class="discount-badge">58% 할인</div>
+            <ul class="features">
+              <li>✓ 사진 5장 + 영상 1편</li>
+              <li>✓ 산타 음성 메시지</li>
+              <li>✓ 6시간 급행 제작</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 범프 오퍼 -->
+      <div class="bump-offers">
+        <h4>🎄 추가 옵션</h4>
+        <label class="bump-item">
+          <input type="checkbox" name="bump" value="certificate">
+          <div class="bump-content">
+            <div class="bump-info"><span class="bump-icon">🎖️</span><span>착한아이 인증서</span></div>
+            <span class="bump-price">+₩2,900</span>
+          </div>
+        </label>
+        <label class="bump-item">
+          <input type="checkbox" name="bump" value="extraPhoto">
+          <div class="bump-content">
+            <div class="bump-info"><span class="bump-icon">📸</span><span>추가 사진 2장</span></div>
+            <span class="bump-price">+₩3,900</span>
+          </div>
+        </label>
+        <label class="bump-item">
+          <input type="checkbox" name="bump" value="rush">
+          <div class="bump-content">
+            <div class="bump-info"><span class="bump-icon">⚡</span><span>30분 급행</span></div>
+            <span class="bump-price">+₩4,900</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- 가격 요약 -->
+      <div class="price-summary">
+        <div class="summary-row">
+          <span>선택 패키지</span>
+          <span id="summaryPackage">-</span>
+        </div>
+        <div class="summary-row" id="summaryBumpsRow" style="display:none;">
+          <span>추가 옵션</span>
+          <span id="summaryBumps">-</span>
+        </div>
+        <div class="summary-row total">
+          <span>총 결제금액</span>
+          <span id="summaryTotal">₩0</span>
+        </div>
+        <div class="savings-highlight" id="savingsRow">
+          <div class="savings-icon">🎉</div>
+          <div class="savings-text">
+            <span>지금 결제하면</span>
+            <strong id="savingsAmount">₩0</strong>
+            <span>절약!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 개인정보 동의 -->
+      <div class="privacy-consent">
+        <label class="consent-checkbox">
+          <input type="checkbox" id="privacyAgree">
+          <span class="consent-text">[필수] <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보 처리방침</a>에 동의합니다</span>
+        </label>
+        <p class="privacy-notice">📌 업로드된 사진은 제작 완료 후 7일 이내 자동 삭제됩니다.</p>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-secondary" id="backStep3">← 이전</button>
+        <button class="btn-primary btn-pay" id="payButton" disabled>
+          <span class="btn-icon">🔒</span>
+          <span>안전하게 결제하기</span>
         </button>
-      </form>
-    </div>
+      </div>
+
+      <div class="payment-info">
+        <div class="payment-methods">
+          <span>💳 카드</span>
+          <span>📱 토스페이</span>
+          <span>🏦 계좌이체</span>
+        </div>
+        <p class="guarantee">✅ 결과물 불만족 시 100% 환불 보장</p>
+      </div>
+    </section>
+
+    <!-- 리뷰 섹션 (47개) -->
+    <section class="review-section">
+      <h3>💬 부모님들의 생생한 후기</h3>
+      <div class="review-stats">
+        <span class="review-score">⭐ 4.9</span>
+        <span class="review-count">47개 리뷰</span>
+      </div>
+      <div class="reviews-container" id="reviewsContainer"></div>
+    </section>
+
+    <!-- FAQ (토글 작동) -->
+    <section class="faq-section">
+      <h3>❓ 자주 묻는 질문</h3>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>진짜처럼 보이나요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">네! AI 전문가와 디자이너가 직접 제작하고 검수합니다. 자연스러운 조명과 그림자까지 세밀하게 조정해요.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>얼마나 걸리나요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">패키지에 따라 6~24시간 내 이메일로 전달됩니다. 급행 옵션 선택 시 30분 내 가능해요!</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>결과물은 어떻게 받나요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">입력하신 이메일로 구글 드라이브 다운로드 링크를 보내드립니다. 바로 다운받아 저장하실 수 있어요.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>개인정보는 안전한가요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">업로드된 사진은 제작 목적으로만 사용되며, 완료 후 7일 이내 완전히 삭제됩니다. 제3자 제공은 절대 없습니다.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>환불 가능한가요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">결과물 불만족 시 100% 환불해드립니다. 단, 제작 시작 후에는 환불이 어려울 수 있어요.</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>© 2024 산타를 만난 순간</p>
+      <p class="footer-links">
+        <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보처리방침</a> | 
+        <a href="mailto:santa.moment.official@gmail.com">문의하기</a>
+      </p>
+    </footer>
   </div>
 
-  <!-- 상세보기 모달 -->
-  <div class="modal" id="detailModal">
+  <!-- 개인정보 모달 -->
+  <div class="modal" id="privacyModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>📋 주문 상세</h2>
-        <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+        <h3>개인정보 처리방침</h3>
+        <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
       </div>
-      <div id="detailContent"></div>
+      <div class="modal-body">
+        <h4>1. 수집하는 개인정보</h4>
+        <p>아이 이름, 나이, 이메일 주소, 업로드된 사진, 결제 정보</p>
+        <h4>2. 이용 목적</h4>
+        <p>산타 합성 콘텐츠 제작 및 전달</p>
+        <h4>3. 보유 및 파기</h4>
+        <p>사진: 7일 이내 삭제 / 이메일: 30일 이내 삭제 / 결제정보: 5년 보관</p>
+        <h4>4. 제3자 제공</h4>
+        <p>절대 없음</p>
+      </div>
+      <button class="btn-primary" onclick="closeModal('privacyModal')">확인</button>
     </div>
   </div>
 
-  <script>
-    let orders = [];
-    
-    // 페이지 로드 시 주문 목록 불러오기
-    document.addEventListener('DOMContentLoaded', loadOrders);
-    
-    async function loadOrders() {
-      try {
-        const response = await fetch('/api/admin/orders');
-        const data = await response.json();
-        orders = data.orders || [];
-        
-        // 통계 업데이트
-        document.getElementById('totalOrders').textContent = data.stats?.total || orders.length;
-        document.getElementById('pendingOrders').textContent = data.stats?.processing || 0;
-        document.getElementById('totalRevenue').textContent = '₩' + (data.stats?.revenue || 0).toLocaleString();
-        
-        renderOrders();
-      } catch (error) {
-        console.error('주문 로드 오류:', error);
-        document.getElementById('ordersBody').innerHTML = `
-          <tr><td colspan="7" style="text-align: center; color: red;">
-            오류: ${error.message}
-          </td></tr>
-        `;
-      }
-    }
-    
-    function renderOrders() {
-      const tbody = document.getElementById('ordersBody');
-      
-      if (orders.length === 0) {
-        tbody.innerHTML = `
-          <tr><td colspan="7" style="text-align: center; padding: 40px;">
-            아직 주문이 없습니다
-          </td></tr>
-        `;
-        return;
-      }
-      
-      tbody.innerHTML = orders.map(order => `
-        <tr>
-          <td style="font-family: monospace; font-size: 12px;">
-            ${order.orderId?.substring(0, 20)}...
-          </td>
-          <td><strong>${order.childName || '-'}</strong></td>
-          <td>${order.packageName || order.packageId || '-'}</td>
-          <td>₩${(order.totalPrice || 0).toLocaleString()}</td>
-          <td>
-            <span class="status-badge status-${order.status}">
-              ${getStatusText(order.status)}
-            </span>
-          </td>
-          <td>${formatDate(order.createdAt)}</td>
-          <td>
-            <button class="btn btn-primary" onclick="showDetail('${order.orderId}')">
-              상세
-            </button>
-            ${order.status !== 'ready' && order.status !== 'completed' ? `
-              <button class="btn btn-success" onclick="openUploadModal('${order.orderId}')">
-                업로드
-              </button>
-            ` : `
-              <span style="color: #28a745;">✅ 완료</span>
-            `}
-          </td>
-        </tr>
-      `).join('');
-    }
-    
-    function getStatusText(status) {
-      const statusMap = {
-        'pending': '⏳ 결제대기',
-        'processing': '🎨 제작중',
-        'ready': '✅ 완성',
-        'completed': '✅ 완료'
-      };
-      return statusMap[status] || status;
-    }
-    
-    function formatDate(dateStr) {
-      if (!dateStr) return '-';
-      const date = new Date(dateStr);
-      return date.toLocaleString('ko-KR', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-    
-    // 상세보기
-    function showDetail(orderId) {
-      const order = orders.find(o => o.orderId === orderId);
-      if (!order) return;
-      
-      const prompt = generatePrompt(order);
-      
-      document.getElementById('detailContent').innerHTML = `
-        <div class="order-detail">
-          <p><strong>주문번호:</strong> ${order.orderId}</p>
-          <p><strong>아이 이름:</strong> ${order.childName || '-'}</p>
-          <p><strong>나이:</strong> ${order.childAge || '-'}</p>
-          <p><strong>메시지:</strong> ${order.parentMessage || '-'}</p>
-          <p><strong>패키지:</strong> ${order.packageName || order.packageId}</p>
-          <p><strong>금액:</strong> ₩${(order.totalPrice || 0).toLocaleString()}</p>
-          <p><strong>상태:</strong> ${getStatusText(order.status)}</p>
-          <p><strong>결제상태:</strong> ${order.paymentStatus || '-'}</p>
-        </div>
-        
-        <h3>📝 이미지 생성 프롬프트</h3>
-        <div class="prompt-box">${prompt}</div>
-        <button class="copy-btn" onclick="copyText(\`${prompt.replace(/`/g, '\\`')}\`)">
-          📋 프롬프트 복사
-        </button>
-        
-        <h3 style="margin-top: 20px;">🔗 고객 조회 링크</h3>
-        <div class="prompt-box">${window.location.origin}/order?id=${order.orderId}</div>
-        <button class="copy-btn" onclick="copyText('${window.location.origin}/order?id=${order.orderId}')">
-          📋 링크 복사
-        </button>
-      `;
-      
-      document.getElementById('detailModal').classList.add('show');
-    }
-    
-    function closeDetailModal() {
-      document.getElementById('detailModal').classList.remove('show');
-    }
-    
-    function generatePrompt(order) {
-      return `Create a photorealistic image of Santa Claus in a Korean living room, leaving gifts. 
-Child's name: ${order.childName || 'Child'}
-Style: Warm, magical Christmas atmosphere, soft lighting, realistic`;
-    }
-    
-    function copyText(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        alert('복사되었습니다!');
-      });
-    }
-    
-    // 업로드 모달
-    function openUploadModal(orderId) {
-      const order = orders.find(o => o.orderId === orderId);
-      if (!order) return;
-      
-      document.getElementById('uploadOrderId').value = orderId;
-      document.getElementById('modalOrderDetail').innerHTML = `
-        <p><strong>주문번호:</strong> ${order.orderId}</p>
-        <p><strong>아이 이름:</strong> ${order.childName || '-'}</p>
-        <p><strong>패키지:</strong> ${order.packageName || order.packageId}</p>
-      `;
-      
-      // 미리보기 초기화
-      document.getElementById('photoPreview').innerHTML = '';
-      document.getElementById('videoPreview').innerHTML = '';
-      document.getElementById('photoFiles').value = '';
-      document.getElementById('videoFile').value = '';
-      
-      document.getElementById('uploadModal').classList.add('show');
-    }
-    
-    function closeModal() {
-      document.getElementById('uploadModal').classList.remove('show');
-    }
-    
-    // 파일 미리보기
-    document.getElementById('photoFiles').addEventListener('change', function(e) {
-      const preview = document.getElementById('photoPreview');
-      preview.innerHTML = '';
-      Array.from(e.target.files).forEach(file => {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.style.maxWidth = '100px';
-        img.style.margin = '5px';
-        preview.appendChild(img);
-      });
-    });
-    
-    document.getElementById('videoFile').addEventListener('change', function(e) {
-      const preview = document.getElementById('videoPreview');
-      preview.innerHTML = '';
-      if (e.target.files[0]) {
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(e.target.files[0]);
-        video.controls = true;
-        video.style.maxWidth = '100%';
-        preview.appendChild(video);
-      }
-    });
-    
-    // 업로드 제출
-    async function submitUpload(e) {
-      e.preventDefault();
-      
-      const orderId = document.getElementById('uploadOrderId').value;
-      const photoFiles = document.getElementById('photoFiles').files;
-      const videoFile = document.getElementById('videoFile').files[0];
-      
-      if (photoFiles.length === 0 && !videoFile) {
-        alert('최소 1개 파일을 선택해주세요');
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append('orderId', orderId);
-      
-      Array.from(photoFiles).forEach(file => {
-        formData.append('photos', file);
-      });
-      
-      if (videoFile) {
-        formData.append('video', videoFile);
-      }
-      
-      try {
-        const response = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          alert('✅ 업로드 완료! 고객이 다운로드할 수 있습니다.');
-          closeModal();
-          loadOrders();
-        } else {
-          alert('오류: ' + (result.error || '업로드 실패'));
-        }
-      } catch (error) {
-        console.error('업로드 오류:', error);
-        alert('업로드 중 오류가 발생했습니다');
-      }
-    }
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
