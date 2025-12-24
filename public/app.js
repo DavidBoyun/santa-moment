@@ -438,6 +438,15 @@ function toggleFaq(el) {
   if (!isOpen) item.classList.add('open');
 }
 
+// 전역 함수로 노출 (onclick에서 사용)
+window.toggleFaq = toggleFaq;
+window.showPrivacyPolicy = function() {
+  document.getElementById('privacyModal')?.classList.add('show');
+};
+window.closeModal = function(id) {
+  document.getElementById(id)?.classList.remove('show');
+};
+
 // ============================================
 // 47개 리뷰 렌더링
 // ============================================
@@ -550,12 +559,4 @@ function showToast(msg, type = 'info') {
   `;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
-}
-
-function showPrivacyPolicy() {
-  document.getElementById('privacyModal')?.classList.add('show');
-}
-
-function closeModal(id) {
-  document.getElementById(id)?.classList.remove('show');
 }
