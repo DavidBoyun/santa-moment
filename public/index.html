@@ -140,7 +140,7 @@
       </div>
 
       <div class="packages">
-        <div class="price-card" data-package="tripwire">
+        <div class="price-card" data-package="photo1">
           <div class="price-header">
             <span class="package-emoji">📸</span>
             <h3>산타 포착 사진</h3>
@@ -159,41 +159,61 @@
           </div>
         </div>
 
-        <div class="price-card popular" data-package="core">
+        <div class="price-card popular" data-package="giftset">
           <div class="popular-badge">🔥 가장 인기</div>
           <div class="price-header">
             <span class="package-emoji">🎁</span>
-            <h3>산타의 선물 세트</h3>
+            <h3>산타 선물세트</h3>
           </div>
           <div class="price-body">
             <div class="price">
-              <span class="original">₩25,000</span>
-              <span class="current">₩9,900</span>
+              <span class="original">₩15,000</span>
+              <span class="current">₩4,900</span>
             </div>
-            <div class="discount-badge">60% 할인</div>
+            <div class="discount-badge">67% 할인</div>
             <ul class="features">
               <li>✓ 산타 합성 사진 3장</li>
-              <li>✓ 착한아이 인증서</li>
+              <li>✓ 착한아이 인증서 포함</li>
               <li>✓ 12시간 내 이메일 전달</li>
             </ul>
           </div>
         </div>
 
-        <div class="price-card" data-package="premium">
+        <div class="price-card" data-package="videoonly">
           <div class="price-header">
             <span class="package-emoji">🎬</span>
+            <h3>영상만</h3>
+          </div>
+          <div class="price-body">
+            <div class="price">
+              <span class="original">₩39,000</span>
+              <span class="current">₩17,900</span>
+            </div>
+            <div class="discount-badge">54% 할인</div>
+            <ul class="features">
+              <li>✓ 산타 영상 1편 (8초)</li>
+              <li>✓ 고화질 다운로드</li>
+              <li>✓ 6시간 내 제작</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="price-card premium-card" data-package="premium">
+          <div class="premium-badge">👑 프리미엄</div>
+          <div class="price-header">
+            <span class="package-emoji">✨</span>
             <h3>산타의 마법 영상</h3>
           </div>
           <div class="price-body">
             <div class="price">
               <span class="original">₩59,000</span>
-              <span class="current">₩24,900</span>
+              <span class="current">₩19,900</span>
             </div>
-            <div class="discount-badge">58% 할인</div>
+            <div class="discount-badge">66% 할인</div>
             <ul class="features">
               <li>✓ 사진 5장 + 영상 1편</li>
-              <li>✓ 산타 음성 메시지</li>
-              <li>✓ 6시간 급행 제작</li>
+              <li>✓ 산타 자필편지 포함</li>
+              <li>✓ 1~2시간 급행 제작</li>
             </ul>
           </div>
         </div>
@@ -210,9 +230,9 @@
           </div>
         </label>
         <label class="bump-item">
-          <input type="checkbox" name="bump" value="extraPhoto">
+          <input type="checkbox" name="bump" value="letter">
           <div class="bump-content">
-            <div class="bump-info"><span class="bump-icon">📸</span><span>추가 사진 2장</span></div>
+            <div class="bump-info"><span class="bump-icon">✉️</span><span>산타 자필편지</span></div>
             <span class="bump-price">+₩3,900</span>
           </div>
         </label>
@@ -237,15 +257,10 @@
         </div>
         <div class="summary-row total">
           <span>총 결제금액</span>
-          <span id="summaryTotal">₩0</span>
+          <span id="summaryTotal" class="total-price">₩0</span>
         </div>
-        <div class="savings-highlight" id="savingsRow">
-          <div class="savings-icon">🎉</div>
-          <div class="savings-text">
-            <span>지금 결제하면</span>
-            <strong id="savingsAmount">₩0</strong>
-            <span>절약!</span>
-          </div>
+        <div class="savings-row" id="savingsRow">
+          <span class="savings-badge">−<span id="savingsAmount">₩0</span> 절약!</span>
         </div>
       </div>
 
@@ -329,10 +344,10 @@
     </section>
 
     <footer class="footer">
-      <p>© 2024 산타를 만난 순간</p>
+      <p>© 2025 산타를 만난 순간</p>
       <p class="footer-links">
         <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보처리방침</a> | 
-        <a href="mailto:santa.moment.official@gmail.com">문의하기</a>
+        <a href="/cdn-cgi/l/email-protection#e390828d9782cd8e8c8e868d97cd8c85858a808a828fa3848e828a8fcd808c8e">문의하기</a>
       </p>
     </footer>
   </div>
@@ -356,8 +371,4 @@
       </div>
       <button class="btn-primary" onclick="closeModal('privacyModal')">확인</button>
     </div>
-  </div>
-
-  <script src="app.js"></script>
-</body>
-</html>
+  </d
