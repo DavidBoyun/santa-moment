@@ -94,7 +94,7 @@ function updateRemainingSlots() {
 }
 
 // ============================================
-// STEP 1: 사진 업로드
+// STEP 1: 사진 업로드 (카메라 + 갤러리 분리)
 // ============================================
 function initUploader() {
   const uploadArea = document.getElementById('uploadArea');
@@ -105,8 +105,64 @@ function initUploader() {
   const retryBtn = document.getElementById('retryBtn');
   const nextBtn = document.getElementById('nextStep1');
   
-  // 클릭으로 파일 선택
-  uploadArea.addEventListener('click', () => photoInput.click());
+  // Null 체크
+  if (!uploadArea || !photoInput) {
+    console.warn('initUploader: 필수 요소 없음');
+    return;
+  }
+  
+  // === 카메라/갤러리 버튼 동적 추가 ===
+  const uploadButtons = document.createElement('div');
+  uploadButtons.className = 'upload-buttons';
+  uploadButtons.innerHTML = `
+    <button type="button" class="upload-btn camera" id="cameraBtn">
+      📷 카메라로 촬영
+    </button>
+    <button type="button" class="upload-btn gallery" id="galleryBtn">
+      🖼️ 앨범에서 선택
+    </button>
+  `;
+  
+  // upload-placeholder 뒤에 버튼 추가
+  const placeholder = uploadArea.querySelector('.upload-placeholder');
+  if (placeholder) {
+    placeholder.after(uploadButtons);
+  } else {
+    uploadArea.appendChild(uploadButtons);
+  }
+  
+  const cameraBtn = document.getElementById('cameraBtn');
+  const galleryBtn = document.getElementById('galleryBtn');
+  
+  // 카메라 버튼 - 실시간 촬영
+  if (cameraBtn) {
+    cameraBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      photoInput.setAttribute('capture', 'environment'); // 후면 카메라
+      photoInput.value = '';
+      photoInput.click();
+    });
+  }
+  
+  // 갤러리 버튼 - 앨범 선택
+  if (galleryBtn) {
+    galleryBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      photoInput.removeAttribute('capture');
+      photoInput.value = '';
+      photoInput.click();
+    });
+  }
+  
+  // 영역 클릭은 갤러리로 (placeholder 클릭 시)
+  if (placeholder) {
+    placeholder.addEventListener('click', (e) => {
+      e.stopPropagation();
+      photoInput.removeAttribute('capture');
+      photoInput.value = '';
+      photoInput.click();
+    });
+  }
   
   // 드래그 앤 드롭
   uploadArea.addEventListener('dragover', (e) => {
@@ -136,14 +192,16 @@ function initUploader() {
   });
   
   // 다시 찍기
-  retryBtn.addEventListener('click', () => {
-    photoInput.value = '';
-    uploadArea.style.display = 'block';
-    previewContainer.style.display = 'none';
-    nextBtn.disabled = true;
-    APP_STATE.uploadedPhoto = null;
-  });
-}
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      photoInput.value = '';
+      uploadArea.style.display = 'block';
+      if (previewContainer) previewContainer.style.display = 'none';
+      if (nextBtn) nextBtn.disabled = true;
+      APP_STATE.uploadedPhoto = null;
+    });
+  }
+} // initUploader 함수 끝
 
 async function handlePhotoUpload(file) {
   const uploadArea = document.getElementById('uploadArea');
@@ -197,14 +255,20 @@ async function handlePhotoUpload(file) {
 }
 
 // ============================================
-// STEP 2: 아이 정보 입력
+// STEP 2: 아이 정보 입력 (버그 수정: santaMessage)
 // ============================================
 function initFormValidation() {
   const childName = document.getElementById('childName');
   const childAge = document.getElementById('childAge');
-  const childMessage = document.getElementById('childMessage');
+  const santaMessage = document.getElementById('santaMessage'); // 수정됨!
   const charCount = document.getElementById('charCount');
   const nextBtn = document.getElementById('nextStep2');
+  
+  // Null 체크 추가 (방어적 코딩)
+  if (!childName || !nextBtn) {
+    console.warn('initFormValidation: 필수 요소 없음');
+    return;
+  }
   
   function validateForm() {
     const isValid = childName.value.trim().length >= 1;
@@ -215,31 +279,43 @@ function initFormValidation() {
   childName.addEventListener('input', () => {
     APP_STATE.childInfo.name = childName.value.trim();
     validateForm();
+    // STEP 3에서 아이 이름 표시 업데이트
+    const nameDisplay = document.getElementById('childNameDisplay');
+    if (nameDisplay) nameDisplay.textContent = childName.value.trim() || '아이';
   });
   
-  childAge.addEventListener('change', () => {
-    APP_STATE.childInfo.age = childAge.value;
-  });
+  if (childAge) {
+    childAge.addEventListener('change', () => {
+      APP_STATE.childInfo.age = childAge.value;
+    });
+  }
   
-  childMessage.addEventListener('input', () => {
-    const text = childMessage.value;
-    const remaining = 80 - text.length;
-    charCount.textContent = `${remaining}자 남음`;
-    
-    if (remaining < 0) {
-      childMessage.value = text.slice(0, 80);
-      charCount.textContent = '0자 남음';
-    }
-    
-    APP_STATE.childInfo.message = childMessage.value;
-  });
+  if (santaMessage && charCount) {
+    santaMessage.addEventListener('input', () => {
+      const text = santaMessage.value;
+      const count = text.length;
+      charCount.textContent = count; // HTML: 0/80 형식이므로 숫자만
+      
+      if (count > 80) {
+        santaMessage.value = text.slice(0, 80);
+        charCount.textContent = '80';
+      }
+      
+      APP_STATE.childInfo.message = santaMessage.value;
+    });
+  }
 }
 
 // ============================================
-// STEP 3: 패키지 선택
+// STEP 3: 패키지 선택 (클래스명 수정: price-card)
 // ============================================
 function initPackageSelection() {
-  const packageCards = document.querySelectorAll('.package-card');
+  const packageCards = document.querySelectorAll('.price-card');
+  
+  if (packageCards.length === 0) {
+    console.warn('initPackageSelection: 패키지 카드 없음');
+    return;
+  }
   
   packageCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -253,24 +329,28 @@ function initPackageSelection() {
       APP_STATE.selectedPackage = packageId;
       
       updatePriceSummary();
-      document.getElementById('payButton').disabled = false;
+      const payBtn = document.getElementById('payButton');
+      if (payBtn) payBtn.disabled = false;
     });
   });
 }
 
 function initBumpOffers() {
-  const bumpCheckboxes = document.querySelectorAll('.bump-checkbox input');
+  const bumpCheckboxes = document.querySelectorAll('.bump-item input[type="checkbox"]');
   
   bumpCheckboxes.forEach(checkbox => {
     checkbox.addEventListener('change', () => {
-      const bumpId = checkbox.closest('.bump-checkbox').dataset.bump;
+      const bumpItem = checkbox.closest('.bump-item');
+      const bumpId = checkbox.value; // value 속성 사용
       
       if (checkbox.checked) {
         if (!APP_STATE.bumpOffers.includes(bumpId)) {
           APP_STATE.bumpOffers.push(bumpId);
         }
+        if (bumpItem) bumpItem.classList.add('selected');
       } else {
         APP_STATE.bumpOffers = APP_STATE.bumpOffers.filter(id => id !== bumpId);
+        if (bumpItem) bumpItem.classList.remove('selected');
       }
       
       updatePriceSummary();
@@ -533,6 +613,68 @@ toastStyles.textContent = `
   .toast-error {
     background: #ffebee;
     color: #c62828;
+  }
+  
+  /* 카메라/갤러리 버튼 */
+  .upload-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .upload-btn {
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    border: none;
+    min-width: 140px;
+    justify-content: center;
+  }
+  
+  .upload-btn.camera {
+    background: linear-gradient(135deg, #D42426, #B01E20);
+    color: white;
+    box-shadow: 0 4px 15px rgba(212, 36, 38, 0.3);
+  }
+  
+  .upload-btn.camera:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 36, 38, 0.4);
+  }
+  
+  .upload-btn.gallery {
+    background: #f3f4f6;
+    color: #374151;
+    border: 2px solid #e5e7eb;
+  }
+  
+  .upload-btn.gallery:hover {
+    background: #e5e7eb;
+  }
+  
+  .upload-btn:active {
+    transform: scale(0.95);
+  }
+  
+  /* 패키지 카드 선택 상태 */
+  .price-card.selected {
+    border-color: #D42426 !important;
+    box-shadow: 0 0 0 3px rgba(212, 36, 38, 0.2) !important;
+    transform: scale(1.02);
+  }
+  
+  /* Bump 아이템 선택 상태 */
+  .bump-item.selected {
+    background: rgba(212, 36, 38, 0.05);
+    border-color: #D42426;
   }
 `;
 document.head.appendChild(toastStyles);
