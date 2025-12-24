@@ -347,6 +347,23 @@ body {
   font-weight: 600;
 }
 
+.premium-card {
+  border-color: #9c27b0;
+  background: linear-gradient(135deg, #fce4ec, #ffffff);
+}
+
+.premium-badge {
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background: linear-gradient(135deg, #9c27b0, #673ab7);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .price-header {
   display: flex;
   align-items: center;
@@ -457,35 +474,31 @@ body {
 }
 
 .summary-row.total {
-  border-top: 1px solid var(--border);
+  border-top: 2px solid var(--primary);
   margin-top: 10px;
   padding-top: 15px;
-  font-weight: 600;
-  font-size: 18px;
+  font-weight: 700;
+  font-size: 20px;
 }
 
-.savings-highlight {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  border-radius: 12px;
-  padding: 15px;
-  margin-top: 15px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.savings-icon {
-  font-size: 32px;
-}
-
-.savings-text span {
-  font-size: 12px;
-}
-
-.savings-text strong {
+.total-price {
+  color: var(--primary);
   font-size: 24px;
-  color: var(--primary-dark);
-  display: block;
+}
+
+.savings-row {
+  text-align: right;
+  margin-top: 8px;
+}
+
+.savings-badge {
+  display: inline-block;
+  background: #ffebee;
+  color: var(--primary);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* 개인정보 동의 */
