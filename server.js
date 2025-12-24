@@ -310,6 +310,12 @@ app.get('/api/orders/:orderId', (req, res) => {
 // 🔥 결제 결과 페이지 라우팅
 // ============================================
 
+
+// 주문 조회 페이지
+app.get('/order', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'order.html'));
+});
+
 // 결제 성공 페이지
 app.get('/payment/success', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'success.html'));
@@ -389,7 +395,70 @@ app.put('/api/admin/orders/:orderId/status', (req, res) => {
 // ============================================
 // ì„œë²„ ì‹œìž‘ - Railway í˜¸í™˜
 // ============================================
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = 
+
+// ============================================
+// 🔥 관리자 - 완성 파일 업로드
+// ============================================
+const deliveryUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = './uploads/delivery';
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `${req.body.orderId}-${Date.now()}${ext}`);
+    }
+  }),
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB
+});
+
+app.post('/api/admin/upload', deliveryUpload.fields([
+  { name: 'photos', maxCount: 5 },
+  { name: 'video', maxCount: 1 }
+]), (req, res) => {
+  const { orderId } = req.body;
+  
+  const order = orders.get(orderId);
+  if (!order) {
+    return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
+  }
+  
+  // 파일 경로 저장
+  const deliveryFiles = {
+    photos: [],
+    video: null
+  };
+  
+  if (req.files['photos']) {
+    deliveryFiles.photos = req.files['photos'].map(f => `/uploads/delivery/${f.filename}`);
+  }
+  
+  if (req.files['video'] && req.files['video'][0]) {
+    deliveryFiles.video = `/uploads/delivery/${req.files['video'][0].filename}`;
+  }
+  
+  // 주문 업데이트
+  order.deliveryFiles = deliveryFiles;
+  order.status = 'ready';
+  order.completedAt = new Date();
+  
+  console.log(`✅ 주문 완성: ${orderId}`);
+  
+  res.json({
+    success: true,
+    orderId,
+    deliveryFiles
+  });
+});
+
+// 배달 파일 접근
+app.use('/uploads/delivery', express.static('uploads/delivery'));
+
+
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`ðŸŽ… ì‚°íƒ€ë¥¼ ë§Œë‚œ ìˆœê°„ - ì„œë²„ ì‹œìž‘!`);
   console.log(`ðŸŒ PORT: ${PORT}`);
   console.log(`âœ… Health check: /health`);
