@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎅 관리자 - 산타를 만난 순간</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a472a, #2d5016);
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      font-size: 24px;
+    }
+    .header-stats {
+      display: flex;
+      gap: 20px;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.2);
+      padding: 10px 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .stat-box .number {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .stat-box .label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 12px 24px;
+      background: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .tab.active {
+      background: #1a472a;
+      color: white;
+    }
+    .tab:hover:not(.active) {
+      background: #e9ecef;
+    }
+    .orders-table {
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+    tr:hover {
+      background: #f8f9fa;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-processing {
+      background: #cce5ff;
+      color: #004085;
+    }
+    .status-completed {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-failed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-right: 5px;
+      transition: all 0.3s;
+    }
+    .btn-view {
+      background: #e9ecef;
+      color: #333;
+    }
+    .btn-process {
+      background: #1a472a;
+      color: white;
+    }
+    .btn-complete {
+      background: #28a745;
+      color: white;
+    }
+    .btn-download {
+      background: #007bff;
+      color: white;
+    }
+    .action-btn:hover {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h2 {
+      font-size: 20px;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    .order-detail {
+      display: grid;
+      gap: 15px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .detail-label {
+      color: #666;
+    }
+    .detail-value {
+      font-weight: 600;
+    }
+    .photo-preview {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-state .icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+    }
+    .refresh-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #c41e3a;
+      color: white;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(196,30,58,0.4);
+      transition: all 0.3s;
+    }
+    .refresh-btn:hover {
+      transform: scale(1.1);
+    }
+    .message-preview {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+      font-style: italic;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>🎅 산타를 만난 순간 - 관리자</h1>
+    <div class="header-stats">
+      <div class="stat-box">
+        <div class="number" id="totalOrders">0</div>
+        <div class="label">총 주문</div>
+      </div>
+      <div class="stat-box">
+        <div class="number" id="pendingOrders">0</div>
+        <div class="label">대기 중</div>
+      </div>
+      <div class="stat-box">
+        <div class="number" id="totalRevenue">₩0</div>
+        <div class="label">총 매출</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" data-status="all">전체</button>
+      <button class="tab" data-status="pending">⏳ 대기</button>
+      <button class="tab" data-status="processing">🎨 제작중</button>
+      <button class="tab" data-status="completed">✅ 완료</button>
+      <button class="tab" data-status="failed">❌ 실패</button>
+    </div>
+
+    <div class="orders-table">
+      <table>
+        <thead>
+          <tr>
+            <th>주문번호</th>
+            <th>아이 이름</th>
+            <th>패키지</th>
+            <th>금액</th>
+            <th>상태</th>
+            <th>주문시간</th>
+            <th>액션</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody">
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="icon">📭</div>
+                <p>아직 주문이 없습니다</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 주문 상세 모달 -->
+  <div class="modal" id="orderModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📦 주문 상세</h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="order-detail" id="orderDetail">
+        <!-- 동적으로 채워짐 -->
+      </div>
+    </div>
+  </div>
+
+  <button class="refresh-btn" onclick="loadOrders()" title="새로고침">🔄</button>
+
+  <script>
+    let allOrders = [];
+    let currentFilter = 'all';
+
+    // 주문 목록 로드
+    async function loadOrders() {
+      try {
+        const response = await fetch('/api/admin/orders');
+        const data = await response.json();
+        
+        if (data.success) {
+          allOrders = data.orders;
+          renderOrders();
+          updateStats();
+        }
+      } catch (error) {
+        console.error('주문 로드 실패:', error);
+      }
+    }
+
+    // 통계 업데이트
+    function updateStats() {
+      const total = allOrders.length;
+      const pending = allOrders.filter(o => o.status === 'pending' || o.status === 'paid').length;
+      const revenue = allOrders
+        .filter(o => o.status !== 'failed')
+        .reduce((sum, o) => sum + (o.amount || 0), 0);
+
+      document.getElementById('totalOrders').textContent = total;
+      document.getElementById('pendingOrders').textContent = pending;
+      document.getElementById('totalRevenue').textContent = '₩' + revenue.toLocaleString();
+    }
+
+    // 주문 목록 렌더링
+    function renderOrders() {
+      const tbody = document.getElementById('ordersBody');
+      
+      let filteredOrders = allOrders;
+      if (currentFilter !== 'all') {
+        filteredOrders = allOrders.filter(o => o.status === currentFilter);
+      }
+
+      if (filteredOrders.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="icon">📭</div>
+                <p>해당하는 주문이 없습니다</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filteredOrders.map(order => `
+        <tr>
+          <td><strong>${order.orderId || '-'}</strong></td>
+          <td>${order.childName || '-'} ${order.childAge ? `(${order.childAge}세)` : ''}</td>
+          <td>${order.packageName || order.package || '-'}</td>
+          <td>₩${(order.amount || 0).toLocaleString()}</td>
+          <td><span class="status-badge status-${order.status}">${getStatusText(order.status)}</span></td>
+          <td>${formatDate(order.createdAt)}</td>
+          <td>
+            <button class="action-btn btn-view" onclick="viewOrder('${order.orderId}')">상세</button>
+            ${order.status === 'paid' ? `<button class="action-btn btn-process" onclick="updateStatus('${order.orderId}', 'processing')">제작시작</button>` : ''}
+            ${order.status === 'processing' ? `<button class="action-btn btn-complete" onclick="updateStatus('${order.orderId}', 'completed')">완료</button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // 상태 텍스트
+    function getStatusText(status) {
+      const texts = {
+        'pending': '⏳ 결제대기',
+        'paid': '💰 결제완료',
+        'processing': '🎨 제작중',
+        'completed': '✅ 완료',
+        'failed': '❌ 실패'
+      };
+      return texts[status] || status;
+    }
+
+    // 날짜 포맷
+    function formatDate(dateString) {
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return date.toLocaleString('ko-KR', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // 주문 상세 보기
+    async function viewOrder(orderId) {
+      const order = allOrders.find(o => o.orderId === orderId);
+      if (!order) return;
+
+      const detail = document.getElementById('orderDetail');
+      detail.innerHTML = `
+        <div class="detail-row">
+          <span class="detail-label">주문번호</span>
+          <span class="detail-value">${order.orderId}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">상태</span>
+          <span class="detail-value"><span class="status-badge status-${order.status}">${getStatusText(order.status)}</span></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">아이 이름</span>
+          <span class="detail-value">${order.childName || '-'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">아이 나이</span>
+          <span class="detail-value">${order.childAge || '-'}세</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">패키지</span>
+          <span class="detail-value">${order.packageName || order.package || '-'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">추가 옵션</span>
+          <span class="detail-value">${order.bumpOffers?.join(', ') || '없음'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">결제 금액</span>
+          <span class="detail-value" style="color: #c41e3a; font-size: 18px;">₩${(order.amount || 0).toLocaleString()}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">주문 시간</span>
+          <span class="detail-value">${formatDate(order.createdAt)}</span>
+        </div>
+        ${order.message ? `
+          <div>
+            <span class="detail-label">산타 메시지</span>
+            <div class="message-preview">"${order.message}"</div>
+          </div>
+        ` : ''}
+        ${order.photoPath ? `
+          <div>
+            <span class="detail-label">업로드된 사진</span>
+            <img src="${order.photoPath}" class="photo-preview" alt="업로드된 사진">
+          </div>
+        ` : ''}
+      `;
+
+      document.getElementById('orderModal').classList.add('active');
+    }
+
+    // 모달 닫기
+    function closeModal() {
+      document.getElementById('orderModal').classList.remove('active');
+    }
+
+    // 상태 업데이트
+    async function updateStatus(orderId, newStatus) {
+      try {
+        const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          loadOrders();
+        } else {
+          alert('상태 업데이트 실패: ' + data.message);
+        }
+      } catch (error) {
+        alert('오류 발생: ' + error.message);
+      }
+    }
+
+    // 탭 클릭
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.status;
+        renderOrders();
+      });
+    });
+
+    // 모달 외부 클릭 시 닫기
+    document.getElementById('orderModal').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) {
+        closeModal();
+      }
+    });
+
+    // 초기 로드
+    loadOrders();
+    
+    // 30초마다 자동 새로고침
+    setInterval(loadOrders, 30000);
+  </script>
+</body>
+</html>

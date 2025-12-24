@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎉 결제 완료 - 산타를 만난 순간</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .success-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      background: linear-gradient(135deg, #1a472a 0%, #2d5016 100%);
+    }
+    .success-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .success-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: bounce 1s ease infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .success-title {
+      font-size: 28px;
+      color: #1a472a;
+      margin-bottom: 10px;
+    }
+    .success-message {
+      color: #666;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+    .order-info {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+    .order-info h3 {
+      margin: 0 0 15px 0;
+      color: #1a472a;
+      font-size: 16px;
+    }
+    .order-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed #ddd;
+    }
+    .order-row:last-child {
+      border-bottom: none;
+      font-weight: bold;
+      color: #c41e3a;
+    }
+    .timeline {
+      text-align: left;
+      margin-bottom: 30px;
+    }
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+    .timeline-icon {
+      width: 30px;
+      height: 30px;
+      background: #1a472a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+    .timeline-icon.active {
+      background: #c41e3a;
+      animation: pulse 1.5s ease infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(196, 30, 58, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(196, 30, 58, 0); }
+    }
+    .timeline-content h4 {
+      margin: 0 0 5px 0;
+      font-size: 14px;
+    }
+    .timeline-content p {
+      margin: 0;
+      font-size: 12px;
+      color: #888;
+    }
+    .contact-info {
+      background: #fff3cd;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .btn-home {
+      display: inline-block;
+      background: #1a472a;
+      color: white;
+      padding: 15px 40px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    .btn-home:hover {
+      background: #2d5016;
+      transform: scale(1.05);
+    }
+    .snowflakes {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .snowflake {
+      position: absolute;
+      color: white;
+      font-size: 20px;
+      animation: fall linear infinite;
+      opacity: 0.8;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-10vh) rotate(0deg); }
+      100% { transform: translateY(110vh) rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="snowflakes" id="snowflakes"></div>
+  
+  <div class="success-container">
+    <div class="success-card">
+      <div class="success-icon">🎅✨</div>
+      <h1 class="success-title">결제가 완료되었어요!</h1>
+      <p class="success-message">
+        산타 할아버지가 열심히 준비 중이에요.<br>
+        <strong id="childName">아이</strong>에게 특별한 선물이 될 거예요!
+      </p>
+
+      <div class="order-info">
+        <h3>📦 주문 정보</h3>
+        <div class="order-row">
+          <span>주문번호</span>
+          <span id="orderId">-</span>
+        </div>
+        <div class="order-row">
+          <span>상품</span>
+          <span id="packageName">-</span>
+        </div>
+        <div class="order-row">
+          <span>결제금액</span>
+          <span id="totalAmount">-</span>
+        </div>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-icon">✓</div>
+          <div class="timeline-content">
+            <h4>결제 완료</h4>
+            <p>방금 완료되었어요</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-icon active">🎨</div>
+          <div class="timeline-content">
+            <h4>산타 마법 제작 중...</h4>
+            <p>AI가 열심히 합성하고 있어요</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-icon">📱</div>
+          <div class="timeline-content">
+            <h4>카카오톡 전송</h4>
+            <p>완성되면 바로 보내드려요</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-info">
+        💡 <strong>예상 소요시간:</strong> 30분~2시간<br>
+        📞 문의: 카카오톡 @santa-moment
+      </div>
+
+      <a href="/" class="btn-home">🏠 홈으로 돌아가기</a>
+    </div>
+  </div>
+
+  <script>
+    // URL 파라미터에서 정보 추출
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
+    const amount = urlParams.get('amount');
+    
+    // 주문 정보 표시
+    if (orderId) {
+      document.getElementById('orderId').textContent = orderId;
+    }
+    if (amount) {
+      document.getElementById('totalAmount').textContent = 
+        parseInt(amount).toLocaleString() + '원';
+    }
+    
+    // 로컬스토리지에서 추가 정보 가져오기
+    const savedOrder = localStorage.getItem('lastOrder');
+    if (savedOrder) {
+      const order = JSON.parse(savedOrder);
+      if (order.childName) {
+        document.getElementById('childName').textContent = order.childName;
+      }
+      if (order.packageName) {
+        document.getElementById('packageName').textContent = order.packageName;
+      }
+    }
+
+    // 눈 내리는 효과
+    function createSnowflakes() {
+      const container = document.getElementById('snowflakes');
+      const snowflakeChars = ['❄', '❅', '❆', '✻', '✼'];
+      
+      for (let i = 0; i < 50; i++) {
+        const snowflake = document.createElement('div');
+        snowflake.className = 'snowflake';
+        snowflake.textContent = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
+        snowflake.style.left = Math.random() * 100 + 'vw';
+        snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        snowflake.style.animationDelay = Math.random() * 5 + 's';
+        snowflake.style.fontSize = (Math.random() * 15 + 10) + 'px';
+        container.appendChild(snowflake);
+      }
+    }
+    
+    createSnowflakes();
+  </script>
+</body>
+</html>

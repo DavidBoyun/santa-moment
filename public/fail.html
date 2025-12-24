@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>😢 결제 실패 - 산타를 만난 순간</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .fail-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    }
+    .fail-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .fail-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+    .fail-title {
+      font-size: 24px;
+      color: #c0392b;
+      margin-bottom: 10px;
+    }
+    .fail-message {
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .error-box {
+      background: #ffeaea;
+      border: 1px solid #ffcccc;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 25px;
+      text-align: left;
+    }
+    .error-box h4 {
+      margin: 0 0 10px 0;
+      color: #c0392b;
+      font-size: 14px;
+    }
+    .error-box p {
+      margin: 0;
+      font-size: 13px;
+      color: #666;
+    }
+    .error-code {
+      font-family: monospace;
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .solutions {
+      text-align: left;
+      margin-bottom: 25px;
+    }
+    .solutions h3 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .solution-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    .solution-icon {
+      font-size: 20px;
+      margin-right: 12px;
+    }
+    .solution-text {
+      font-size: 14px;
+      color: #555;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-retry {
+      display: inline-block;
+      background: #c41e3a;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .btn-retry:hover {
+      background: #a01830;
+      transform: scale(1.05);
+    }
+    .btn-home {
+      display: inline-block;
+      background: #6c757d;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    .btn-home:hover {
+      background: #5a6268;
+    }
+    .support-info {
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 13px;
+      color: #888;
+    }
+    .support-info a {
+      color: #c41e3a;
+      text-decoration: none;
+    }
+    .countdown-notice {
+      background: linear-gradient(135deg, #fff3cd, #ffeeba);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .countdown-notice strong {
+      color: #856404;
+    }
+  </style>
+</head>
+<body>
+  <div class="fail-container">
+    <div class="fail-card">
+      <div class="fail-icon">😢</div>
+      <h1 class="fail-title">앗, 결제가 실패했어요</h1>
+      <p class="fail-message">
+        걱정 마세요! 다시 시도하시면 됩니다.<br>
+        산타 할아버지가 기다리고 있어요 🎅
+      </p>
+
+      <div class="countdown-notice">
+        ⏰ <strong>크리스마스까지 얼마 안 남았어요!</strong><br>
+        서두르시면 오늘 밤 전에 받으실 수 있어요.
+      </div>
+
+      <div class="error-box">
+        <h4>❌ 오류 정보</h4>
+        <p>
+          코드: <span class="error-code" id="errorCode">UNKNOWN</span><br>
+          사유: <span id="errorMessage">알 수 없는 오류가 발생했습니다.</span>
+        </p>
+      </div>
+
+      <div class="solutions">
+        <h3>💡 이렇게 해보세요</h3>
+        <div class="solution-item">
+          <span class="solution-icon">💳</span>
+          <span class="solution-text">카드 한도를 확인해주세요. 이번 달 사용 가능 금액이 충분한가요?</span>
+        </div>
+        <div class="solution-item">
+          <span class="solution-icon">🔄</span>
+          <span class="solution-text">다른 결제 수단(다른 카드, 카카오페이 등)으로 시도해보세요.</span>
+        </div>
+        <div class="solution-item">
+          <span class="solution-icon">📱</span>
+          <span class="solution-text">카드사 앱에서 온라인 결제가 차단되어 있지 않은지 확인해주세요.</span>
+        </div>
+        <div class="solution-item">
+          <span class="solution-icon">🌐</span>
+          <span class="solution-text">인터넷 연결 상태를 확인하고 페이지를 새로고침해보세요.</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-retry" onclick="retryPayment()">🔄 다시 결제하기</button>
+        <a href="/" class="btn-home">🏠 처음으로</a>
+      </div>
+
+      <div class="support-info">
+        계속 문제가 발생하시나요?<br>
+        카카오톡 <a href="#">@santa-moment</a>로 문의해주세요.<br>
+        (주문번호: <span id="orderId">-</span>)
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // URL 파라미터에서 오류 정보 추출
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorCode = urlParams.get('code') || 'UNKNOWN';
+    const errorMessage = urlParams.get('message') || '결제가 취소되었거나 오류가 발생했습니다.';
+    const orderId = urlParams.get('orderId');
+
+    // 오류 정보 표시
+    document.getElementById('errorCode').textContent = errorCode;
+    document.getElementById('errorMessage').textContent = decodeURIComponent(errorMessage);
+    
+    if (orderId) {
+      document.getElementById('orderId').textContent = orderId;
+    }
+
+    // 다시 결제하기
+    function retryPayment() {
+      // 이전 주문 정보가 있으면 해당 단계로 이동
+      const savedOrder = localStorage.getItem('lastOrder');
+      if (savedOrder) {
+        // 결제 단계로 바로 이동
+        window.location.href = '/#step3';
+      } else {
+        // 처음부터 시작
+        window.location.href = '/';
+      }
+    }
+
+    // 에러 코드별 추가 안내
+    const errorGuides = {
+      'PAY_PROCESS_CANCELED': '결제창에서 취소하셨네요. 다시 시도해주세요!',
+      'PAY_PROCESS_ABORTED': '결제가 중단되었어요. 다시 시도해주세요.',
+      'REJECT_CARD_COMPANY': '카드사에서 결제를 거절했어요. 카드사에 문의하거나 다른 카드를 사용해주세요.',
+      'INVALID_CARD_NUMBER': '카드 번호가 올바르지 않아요. 다시 확인해주세요.',
+      'INVALID_CARD_EXPIRATION': '카드 유효기간이 만료되었거나 잘못 입력되었어요.',
+      'EXCEED_MAX_AMOUNT': '1회 결제 한도를 초과했어요. 카드 한도를 확인해주세요.'
+    };
+
+    if (errorGuides[errorCode]) {
+      document.getElementById('errorMessage').textContent = errorGuides[errorCode];
+    }
+  </script>
+</body>
+</html>

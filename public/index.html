@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎅 산타를 만난 순간 | 우리 집에 온 산타 증거</title>
+  
+  <!-- 토스페이먼츠 SDK -->
+  <script src="https://js.tosspayments.com/v1/payment"></script>
+  
+  <!-- Pretendard 폰트 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- OG Tags for sharing -->
+  <meta property="og:title" content="🎅 산타를 만난 순간">
+  <meta property="og:description" content="우리 집에 진짜 산타가 왔다! AI가 만드는 마법의 크리스마스 증거">
+  <meta property="og:image" content="/og-image.png">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- 🔥 긴급성 배너 -->
+    <div class="urgency-banner" id="urgencyBanner">
+      <span class="pulse-dot"></span>
+      <span>🎄 크리스마스 특가! <strong id="countdown">--:--</strong> 후 종료</span>
+      <span class="slots">남은 자리: <strong id="remainingSlots">--</strong>명</span>
+    </div>
+
+    <!-- 헤더 -->
+    <header class="header">
+      <h1>🎅 산타를 만난 순간</h1>
+      <p class="tagline">아이에게 평생 잊지 못할 크리스마스를 선물하세요</p>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- STEP 1: 사진 업로드 -->
+    <!-- ========================================== -->
+    <section class="step-section active" id="step1">
+      <div class="step-header">
+        <span class="step-badge">STEP 1</span>
+        <h2>거실 사진을 찍어주세요</h2>
+        <p>산타가 선물을 놓고 갈 공간이에요</p>
+      </div>
+
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-placeholder">
+          <span class="upload-icon">📷</span>
+          <p>터치하여 사진 선택</p>
+          <span class="upload-hint">트리나 거실이 잘 보이게 촬영해주세요</span>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+      </div>
+
+      <div class="preview-container" id="previewContainer" style="display:none;">
+        <img id="previewImage" src="" alt="미리보기">
+        <div class="quality-badge" id="qualityBadge">
+          <span class="quality-score">품질: <strong>--</strong>점</span>
+        </div>
+        <button class="btn-retry" id="retryBtn">다시 찍기</button>
+      </div>
+
+      <button class="btn-primary" id="nextStep1" disabled>
+        다음 단계로 →
+      </button>
+
+      <!-- 사회적 증거 -->
+      <div class="social-proof">
+        <div class="proof-item">
+          <strong>2,847</strong>
+          <span>오늘 주문</span>
+        </div>
+        <div class="proof-item">
+          <strong>⭐ 4.9</strong>
+          <span>만족도</span>
+        </div>
+        <div class="proof-item">
+          <strong>99%</strong>
+          <span>아이 반응</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- STEP 2: 아이 정보 입력 -->
+    <!-- ========================================== -->
+    <section class="step-section" id="step2">
+      <div class="step-header">
+        <span class="step-badge">STEP 2</span>
+        <h2>아이 정보를 알려주세요</h2>
+        <p>산타가 이름을 불러줄 거예요</p>
+      </div>
+
+      <div class="form-group">
+        <label for="childName">아이 이름 <span class="required">*</span></label>
+        <input type="text" id="childName" placeholder="예: 지수" maxlength="10">
+      </div>
+
+      <div class="form-group">
+        <label for="childAge">나이 (선택)</label>
+        <input type="number" id="childAge" placeholder="예: 7" min="1" max="15">
+      </div>
+
+      <div class="form-group">
+        <label for="santaMessage">
+          산타가 전할 메시지 
+          <span class="char-count"><span id="charCount">0</span>/80</span>
+        </label>
+        <textarea id="santaMessage" placeholder="예: 지수야, 올해도 착하게 잘 지냈구나! 양치도 잘하고 동생이랑도 사이좋게 지내서 산타 할아버지가 정말 기뻤단다. 메리 크리스마스!" maxlength="80" rows="3"></textarea>
+        <div class="message-hint">💡 팁: 칭찬 + 격려 메시지가 효과적이에요!</div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-secondary" id="backStep2">← 이전</button>
+        <button class="btn-primary" id="nextStep2" disabled>패키지 선택 →</button>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- STEP 3: 패키지 선택 (러셀 브런슨 핵심!) -->
+    <!-- ========================================== -->
+    <section class="step-section" id="step3">
+      <div class="step-header">
+        <span class="step-badge">STEP 3</span>
+        <h2>마법의 패키지를 선택하세요</h2>
+        <p><span id="childNameDisplay">아이</span>를 위한 특별한 선물</p>
+      </div>
+
+      <!-- 패키지 카드들 -->
+      <div class="pricing-cards">
+        
+        <!-- Tripwire -->
+        <div class="price-card" data-package="tripwire">
+          <div class="card-header">
+            <span class="package-emoji">📸</span>
+            <h3>산타 포착 사진</h3>
+            <div class="price-row">
+              <span class="original-price">₩5,000</span>
+              <span class="current-price">₩1,900</span>
+            </div>
+            <span class="discount-badge">62% OFF</span>
+          </div>
+          <ul class="features">
+            <li>✓ 산타 합성 사진 1장</li>
+            <li>✓ 고화질 다운로드</li>
+            <li>✓ 24시간 내 전달</li>
+          </ul>
+        </div>
+
+        <!-- Core Offer (추천) -->
+        <div class="price-card recommended" data-package="core">
+          <div class="popular-badge">🔥 가장 인기</div>
+          <div class="card-header">
+            <span class="package-emoji">🎁</span>
+            <h3>산타의 선물</h3>
+            <div class="price-row">
+              <span class="original-price">₩24,900</span>
+              <span class="current-price">₩9,900</span>
+            </div>
+            <span class="discount-badge">60% OFF</span>
+          </div>
+          <ul class="features">
+            <li>✓ 산타 합성 사진 <strong>3장</strong></li>
+            <li>✓ 🎬 산타 영상편지 8초</li>
+            <li>✓ 🎖️ 착한아이 인증서</li>
+            <li>✓ 아이 이름 직접 호명</li>
+            <li>✓ <strong>2시간 내</strong> 전달</li>
+          </ul>
+        </div>
+
+        <!-- Profit Maximizer -->
+        <div class="price-card vip" data-package="premium">
+          <div class="vip-badge">👑 VIP</div>
+          <div class="card-header">
+            <span class="package-emoji">👑</span>
+            <h3>마법의 크리스마스</h3>
+            <div class="price-row">
+              <span class="original-price">₩59,900</span>
+              <span class="current-price">₩24,900</span>
+            </div>
+            <span class="discount-badge">58% OFF</span>
+          </div>
+          <ul class="features">
+            <li>✓ 산타 합성 사진 <strong>5장</strong></li>
+            <li>✓ 🎬 산타 영상편지 <strong>x2</strong></li>
+            <li>✓ 🎖️ 프리미엄 착한아이 인증서</li>
+            <li>✓ 📜 산타 친필 편지 PDF</li>
+            <li>✓ 🦌 루돌프 보너스 사진</li>
+            <li>✓ ⚡ <strong>1시간 내</strong> 급행</li>
+            <li>✓ 🔄 수정 1회 무료</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bump Offers (결제 직전 추가) -->
+      <div class="bump-offers" id="bumpOffers">
+        <h4>🎁 함께하면 더 특별해요</h4>
+        
+        <label class="bump-item">
+          <input type="checkbox" value="bump_certificate">
+          <div class="bump-content">
+            <span class="bump-emoji">🎖️</span>
+            <div class="bump-info">
+              <strong>착한아이 인증서 추가</strong>
+              <span>프린트 가능한 고화질 A4 PDF</span>
+            </div>
+            <span class="bump-price">+₩2,900</span>
+          </div>
+        </label>
+
+        <label class="bump-item">
+          <input type="checkbox" value="bump_photo">
+          <div class="bump-content">
+            <span class="bump-emoji">📸</span>
+            <div class="bump-info">
+              <strong>추가 사진 2장</strong>
+              <span>다른 앵글의 산타 사진</span>
+            </div>
+            <span class="bump-price">+₩3,900</span>
+          </div>
+        </label>
+
+        <label class="bump-item">
+          <input type="checkbox" value="bump_rush">
+          <div class="bump-content">
+            <span class="bump-emoji">⚡</span>
+            <div class="bump-info">
+              <strong>급행 전달 (30분)</strong>
+              <span>최우선 순위로 제작</span>
+            </div>
+            <span class="bump-price">+₩4,900</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- 가격 요약 -->
+      <div class="price-summary" id="priceSummary">
+        <div class="summary-row">
+          <span>선택 패키지</span>
+          <span id="summaryPackage">-</span>
+        </div>
+        <div class="summary-row" id="summaryBumpsRow" style="display:none;">
+          <span>추가 옵션</span>
+          <span id="summaryBumps">-</span>
+        </div>
+        <div class="summary-row total">
+          <span>총 결제금액</span>
+          <span id="summaryTotal">₩0</span>
+        </div>
+        <div class="savings-row" id="savingsRow">
+          <span>💰 절약 금액: <strong id="savingsAmount">₩0</strong></span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-secondary" id="backStep3">← 이전</button>
+        <button class="btn-primary btn-pay" id="payButton" disabled>
+          <span class="btn-icon">🔒</span>
+          <span>안전하게 결제하기</span>
+        </button>
+      </div>
+
+      <!-- 결제 안내 -->
+      <div class="payment-info">
+        <div class="payment-methods">
+          <span>💳 카드</span>
+          <span>📱 토스페이</span>
+          <span>🏦 계좌이체</span>
+          <span>📲 카카오페이</span>
+        </div>
+        <p class="guarantee">✅ 결과물 불만족 시 100% 환불 보장</p>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 로딩 화면 -->
+    <!-- ========================================== -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-content">
+        <div class="santa-animation">🎅</div>
+        <h3 id="loadingText">산타가 준비 중이에요...</h3>
+        <div class="loading-steps">
+          <div class="loading-step" data-step="1">📷 사진 분석 중...</div>
+          <div class="loading-step" data-step="2">🎄 조명 매칭 중...</div>
+          <div class="loading-step" data-step="3">🎅 산타 배치 중...</div>
+          <div class="loading-step" data-step="4">✨ 마법 완성!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 후기 섹션 -->
+    <section class="reviews-section">
+      <h3>💬 부모님들의 후기</h3>
+      <div class="reviews-slider">
+        <div class="review-card">
+          <div class="review-header">
+            <span class="reviewer">김** 님</span>
+            <span class="stars">⭐⭐⭐⭐⭐</span>
+          </div>
+          <p>"7살 딸이 영상 보고 눈이 휘둥그레져서 '엄마 진짜야?!'라고 물어봤어요 ㅠㅠ 감동"</p>
+        </div>
+        <div class="review-card">
+          <div class="review-header">
+            <span class="reviewer">박** 님</span>
+            <span class="stars">⭐⭐⭐⭐⭐</span>
+          </div>
+          <p>"형제 둘 다 만들어줬는데 서로 자기 이름 불러준다고 난리예요! 최고의 선물!"</p>
+        </div>
+        <div class="review-card">
+          <div class="review-header">
+            <span class="reviewer">이** 님</span>
+            <span class="stars">⭐⭐⭐⭐⭐</span>
+          </div>
+          <p>"작년에 산타 없다고 의심하던 아들이 올해는 완전 믿어요. 가성비 최고!"</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+      <h3>❓ 자주 묻는 질문</h3>
+      <details class="faq-item">
+        <summary>얼마나 빨리 받을 수 있나요?</summary>
+        <p>패키지에 따라 30분~24시간 내 전달됩니다. 급행 옵션 선택 시 30분 내 전달!</p>
+      </details>
+      <details class="faq-item">
+        <summary>진짜처럼 보이나요?</summary>
+        <p>최신 AI 기술로 조명, 그림자까지 완벽하게 맞춰서 합성해요. 99%의 아이들이 진짜라고 믿었어요!</p>
+      </details>
+      <details class="faq-item">
+        <summary>환불은 가능한가요?</summary>
+        <p>결과물이 마음에 안 드시면 100% 환불해드려요. 걱정 마세요!</p>
+      </details>
+    </section>
+
+    <!-- 푸터 -->
+    <footer class="footer">
+      <p>© 2024 산타를 만난 순간. 아이들의 동심을 지킵니다 🎄</p>
+      <p class="footer-links">
+        <a href="#">이용약관</a> | <a href="#">개인정보처리방침</a> | <a href="#">문의하기</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
