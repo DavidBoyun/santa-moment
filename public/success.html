@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎉 결제 완료 - 산타를 만난 순간</title>
+  <title>ðŸŽ‰ ê²°ì œ ì™„ë£Œ - ì‚°íƒ€ë¥¼ ë§Œë‚œ ìˆœê°„</title>
   <link rel="stylesheet" href="/style.css">
   <style>
     .success-container {
@@ -154,66 +154,67 @@
   
   <div class="success-container">
     <div class="success-card">
-      <div class="success-icon">🎅✨</div>
-      <h1 class="success-title">결제가 완료되었어요!</h1>
+      <div class="success-icon">ðŸŽ…âœ¨</div>
+      <h1 class="success-title">ê²°ì œê°€ ì™„ë£Œë˜ì—ˆì–´ìš”!</h1>
       <p class="success-message">
-        산타 할아버지가 열심히 준비 중이에요.<br>
-        <strong id="childName">아이</strong>에게 특별한 선물이 될 거예요!
+        ì‚°íƒ€ í• ì•„ë²„ì§€ê°€ ì—´ì‹¬ížˆ ì¤€ë¹„ ì¤‘ì´ì—ìš”.<br>
+        <strong id="childName">ì•„ì´</strong>ì—ê²Œ íŠ¹ë³„í•œ ì„ ë¬¼ì´ ë  ê±°ì˜ˆìš”!
       </p>
 
       <div class="order-info">
-        <h3>📦 주문 정보</h3>
+        <h3>ðŸ“¦ ì£¼ë¬¸ ì •ë³´</h3>
         <div class="order-row">
-          <span>주문번호</span>
+          <span>ì£¼ë¬¸ë²ˆí˜¸</span>
           <span id="orderId">-</span>
         </div>
         <div class="order-row">
-          <span>상품</span>
+          <span>ìƒí’ˆ</span>
           <span id="packageName">-</span>
         </div>
         <div class="order-row">
-          <span>결제금액</span>
+          <span>ê²°ì œê¸ˆì•¡</span>
           <span id="totalAmount">-</span>
         </div>
       </div>
 
       <div class="timeline">
         <div class="timeline-item">
-          <div class="timeline-icon">✓</div>
+          <div class="timeline-icon">âœ“</div>
           <div class="timeline-content">
-            <h4>결제 완료</h4>
-            <p>방금 완료되었어요</p>
+            <h4>ê²°ì œ ì™„ë£Œ</h4>
+            <p>ë°©ê¸ˆ ì™„ë£Œë˜ì—ˆì–´ìš”</p>
           </div>
         </div>
         <div class="timeline-item">
-          <div class="timeline-icon active">🎨</div>
+          <div class="timeline-icon active">ðŸŽ¨</div>
           <div class="timeline-content">
-            <h4>산타 마법 제작 중...</h4>
-            <p>AI가 열심히 합성하고 있어요</p>
+            <h4>ì‚°íƒ€ ë§ˆë²• ì œìž‘ ì¤‘...</h4>
+            <p>AIê°€ ì—´ì‹¬ížˆ í•©ì„±í•˜ê³  ìžˆì–´ìš”</p>
           </div>
         </div>
         <div class="timeline-item">
-          <div class="timeline-icon">📱</div>
+          <div class="timeline-icon">ðŸ“±</div>
           <div class="timeline-content">
-            <h4>카카오톡 전송</h4>
-            <p>완성되면 바로 보내드려요</p>
+            <h4>ì¹´ì¹´ì˜¤í†¡ ì „ì†¡</h4>
+            <p>ì™„ì„±ë˜ë©´ ë°”ë¡œ ë³´ë‚´ë“œë ¤ìš”</p>
           </div>
         </div>
       </div>
 
       <div class="contact-info">
-        💡 <strong>예상 소요시간:</strong> 30분~2시간<br>
-        📞 문의: 카카오톡 @santa-moment
+        ðŸ’¡ <strong>ì˜ˆìƒ ì†Œìš”ì‹œê°„:</strong> 30ë¶„~2ì‹œê°„<br>
+        ðŸ“ž ë¬¸ì˜: ì¹´ì¹´ì˜¤í†¡ @santa-moment
       </div>
 
-      <a href="/" class="btn-home">🏠 홈으로 돌아가기</a>
+      <a href="/" class="btn-home">ðŸ  í™ˆìœ¼ë¡œ ëŒì•„ê°€ê¸°</a>
     </div>
   </div>
 
-  <script>
+    <script>
     // URL 파라미터에서 정보 추출
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get('orderId');
+    const paymentKey = urlParams.get('paymentKey');
     const amount = urlParams.get('amount');
     
     // 주문 정보 표시
@@ -224,22 +225,55 @@
       document.getElementById('totalAmount').textContent = 
         parseInt(amount).toLocaleString() + '원';
     }
+
+    // 🔥 결제 승인 처리 (핵심!)
+    async function confirmPayment() {
+      if (!paymentKey || !orderId || !amount) {
+        console.log('결제 정보 부족 - 이미 처리됨');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/payments/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentKey, orderId, amount: parseInt(amount) })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('✅ 결제 승인 완료!', result);
+        } else {
+          console.error('❌ 결제 승인 실패:', result);
+          alert('결제 승인 중 문제가 발생했습니다. 고객센터로 연락 주세요.');
+        }
+      } catch (error) {
+        console.error('결제 승인 오류:', error);
+      }
+    }
+
+    // 페이지 로드 시 결제 승인
+    confirmPayment();
     
     // 로컬스토리지에서 추가 정보 가져오기
     const savedOrder = localStorage.getItem('lastOrder');
     if (savedOrder) {
       const order = JSON.parse(savedOrder);
       if (order.childName) {
-        document.getElementById('childName').textContent = order.childName;
+        const el = document.getElementById('childName');
+        if (el) el.textContent = order.childName;
       }
       if (order.packageName) {
-        document.getElementById('packageName').textContent = order.packageName;
+        const el = document.getElementById('packageName');
+        if (el) el.textContent = order.packageName;
       }
     }
 
     // 눈 내리는 효과
     function createSnowflakes() {
       const container = document.getElementById('snowflakes');
+      if (!container) return;
       const snowflakeChars = ['❄', '❅', '❆', '✻', '✼'];
       
       for (let i = 0; i < 50; i++) {
