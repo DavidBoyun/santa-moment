@@ -1,745 +1,363 @@
-/**
- * 🎅 산타를 만난 순간 - Frontend JavaScript
- * 품질 체크 + 개인정보 동의 + 토스페이먼츠 통합
- */
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎅 산타를 만난 순간 | 우리 집에 온 산타 증거</title>
+  <script src="https://js.tosspayments.com/v1/payment"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 실시간 주문 알림 -->
+  <div class="order-notification" id="orderNotification">
+    <div class="notif-icon">🎁</div>
+    <div class="notif-content">
+      <strong id="notifName">김**</strong>님이 <span id="notifPackage">산타의 선물 세트</span>를 주문했어요!
+    </div>
+  </div>
 
-// ============================================
-// 전역 상태
-// ============================================
-const APP_STATE = {
-  currentStep: 1,
-  uploadedPhoto: null,
-  childInfo: {
-    name: '',
-    age: '',
-    message: ''
-  },
-  selectedPackage: null,
-  bumpOffers: [],
-  orderId: null,
-  privacyAgreed: false
-};
+  <!-- 품질 체크 오버레이 -->
+  <div class="quality-overlay" id="qualityOverlay">
+    <div class="quality-modal">
+      <div class="santa-checking">🎅</div>
+      <h3 id="qualityTitle">산타가 사진을 확인중이에요...</h3>
+      <p id="qualityMessage">AI 합성에 적합한지 검사하고 있어요</p>
+      <div class="quality-progress">
+        <div class="progress-bar" id="qualityProgressBar"></div>
+      </div>
+      <div class="quality-checklist">
+        <div class="check-item" id="checkBrightness"><span class="check-icon">⏳</span><span>밝기 확인</span></div>
+        <div class="check-item" id="checkSharpness"><span class="check-icon">⏳</span><span>흔들림 확인</span></div>
+        <div class="check-item" id="checkResolution"><span class="check-icon">⏳</span><span>해상도 확인</span></div>
+      </div>
+    </div>
+  </div>
 
-// 가격 데이터
-const PRICING = {
-  tripwire: { id: 'tripwire', price: 1900, originalPrice: 5000, name: '산타 포착 사진' },
-  core: { id: 'core', price: 9900, originalPrice: 25000, name: '산타의 선물 세트', popular: true },
-  premium: { id: 'premium', price: 24900, originalPrice: 59000, name: '산타의 마법 영상' }
-};
+  <div class="app-container">
+    <!-- 긴급성 배너 -->
+    <div class="urgency-banner">
+      <span class="pulse-dot"></span>
+      <span>🎄 크리스마스 특가! <strong id="countdown">--:--</strong> 후 종료</span>
+      <span class="slots">남은 자리: <strong id="remainingSlots">47</strong>명</span>
+    </div>
 
-const BUMP_OFFERS = {
-  certificate: { id: 'certificate', price: 2900, name: '🎖️ 착한아이 인증서' },
-  extraPhoto: { id: 'extraPhoto', price: 3900, name: '📸 추가 사진 2장' },
-  rush: { id: 'rush', price: 4900, name: '⚡ 30분 급행' }
-};
+    <!-- 헤더 -->
+    <header class="header">
+      <h1>🎅 산타를 만난 순간</h1>
+      <p class="tagline">아이에게 평생 잊지 못할 크리스마스를 선물하세요</p>
+    </header>
 
-// 토스페이먼츠 클라이언트 키 (서버에서 받아옴)
-let TOSS_CLIENT_KEY = '';
+    <!-- STEP 1: 사진 업로드 -->
+    <section class="step-section active" id="step1">
+      <div class="step-header">
+        <span class="step-badge">STEP 1</span>
+        <h2>거실 사진을 찍어주세요</h2>
+        <p>산타가 선물을 놓고 갈 공간이에요</p>
+      </div>
 
-// ============================================
-// 초기화
-// ============================================
-document.addEventListener('DOMContentLoaded', async () => {
-  // 서버에서 설정 가져오기
-  try {
-    const configRes = await fetch('/api/config');
-    const config = await configRes.json();
-    TOSS_CLIENT_KEY = config.tossClientKey;
-    console.log('✅ 토스 클라이언트 키 로드 완료');
-  } catch (e) {
-    console.error('❌ Config 로드 실패:', e);
-    TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
-  }
-  
-  initCountdown();
-  initUploader();
-  initFormValidation();
-  initPackageSelection();
-  initBumpOffers();
-  initPrivacyConsent();
-  initPayment();
-  initNavigation();
-  updateRemainingSlots();
-  
-  console.log('🎅 산타를 만난 순간 - App Initialized');
-});
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-placeholder" id="uploadPlaceholder">
+          <span class="upload-icon">📷</span>
+          <p>터치하여 사진 선택</p>
+          <span class="upload-hint">트리나 거실이 잘 보이게 촬영해주세요</span>
+        </div>
+        <div class="upload-buttons">
+          <button type="button" class="upload-btn camera" id="cameraBtn">📷 카메라</button>
+          <button type="button" class="upload-btn gallery" id="galleryBtn">🖼️ 앨범</button>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" hidden>
+      </div>
 
-// ============================================
-// 긴급성 카운트다운
-// ============================================
-function initCountdown() {
-  const countdownEl = document.getElementById('countdown');
-  if (!countdownEl) return;
-  
-  const christmas = new Date('2024-12-26T00:00:00+09:00');
-  
-  function update() {
-    const now = new Date();
-    const diff = christmas - now;
-    
-    if (diff <= 0) {
-      countdownEl.textContent = '종료!';
-      return;
-    }
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    
-    countdownEl.textContent = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }
-  
-  update();
-  setInterval(update, 1000);
-}
+      <div class="preview-container" id="previewContainer" style="display:none;">
+        <img id="previewImage" src="" alt="미리보기">
+        <div class="quality-badge" id="qualityBadge">
+          <span class="quality-score">품질: <strong>--</strong>점</span>
+        </div>
+        <button class="btn-retry" id="retryBtn">다시 찍기</button>
+      </div>
 
-function updateRemainingSlots() {
-  const slotsEl = document.getElementById('remainingSlots');
-  if (slotsEl) {
-    // 랜덤하게 줄어드는 효과
-    let slots = 100 - Math.floor(Math.random() * 20);
-    slotsEl.textContent = slots;
-  }
-}
+      <button class="btn-primary" id="nextStep1" disabled>다음 단계로 →</button>
 
-// ============================================
-// STEP 1: 사진 업로드 + 품질 체크
-// ============================================
-function initUploader() {
-  const uploadArea = document.getElementById('uploadArea');
-  const photoInput = document.getElementById('photoInput');
-  const cameraBtn = document.getElementById('cameraBtn');
-  const galleryBtn = document.getElementById('galleryBtn');
-  const placeholder = document.getElementById('uploadPlaceholder');
-  const previewContainer = document.getElementById('previewContainer');
-  const retryBtn = document.getElementById('retryBtn');
-  const nextBtn = document.getElementById('nextStep1');
-  
-  if (!uploadArea || !photoInput) return;
-  
-  // 카메라 버튼
-  if (cameraBtn) {
-    cameraBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      photoInput.setAttribute('capture', 'environment');
-      photoInput.value = '';
-      photoInput.click();
-    });
-  }
-  
-  // 갤러리 버튼
-  if (galleryBtn) {
-    galleryBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      photoInput.removeAttribute('capture');
-      photoInput.value = '';
-      photoInput.click();
-    });
-  }
-  
-  // placeholder 클릭
-  if (placeholder) {
-    placeholder.addEventListener('click', (e) => {
-      e.stopPropagation();
-      photoInput.removeAttribute('capture');
-      photoInput.value = '';
-      photoInput.click();
-    });
-  }
-  
-  // 파일 선택
-  photoInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      handlePhotoUpload(file);
-    }
-  });
-  
-  // 드래그 앤 드롭
-  uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.classList.add('drag-over');
-  });
-  
-  uploadArea.addEventListener('dragleave', () => {
-    uploadArea.classList.remove('drag-over');
-  });
-  
-  uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      handlePhotoUpload(file);
-    }
-  });
-  
-  // 다시 찍기
-  if (retryBtn) {
-    retryBtn.addEventListener('click', () => {
-      photoInput.value = '';
-      uploadArea.style.display = 'block';
-      if (previewContainer) previewContainer.style.display = 'none';
-      if (nextBtn) nextBtn.disabled = true;
-      APP_STATE.uploadedPhoto = null;
-    });
-  }
-}
+      <div class="social-proof">
+        <div class="proof-item"><strong>147</strong><span>오늘 주문</span></div>
+        <div class="proof-item"><strong>⭐ 4.9</strong><span>만족도</span></div>
+        <div class="proof-item"><strong>99%</strong><span>아이 반응</span></div>
+      </div>
+    </section>
 
-// ============================================
-// 🔥 진짜 품질 체크 함수
-// ============================================
-async function handlePhotoUpload(file) {
-  const uploadArea = document.getElementById('uploadArea');
-  const previewContainer = document.getElementById('previewContainer');
-  const previewImage = document.getElementById('previewImage');
-  const qualityBadge = document.getElementById('qualityBadge');
-  const nextBtn = document.getElementById('nextStep1');
-  const overlay = document.getElementById('qualityOverlay');
-  
-  // 오버레이 표시
-  if (overlay) overlay.classList.add('show');
-  
-  // 미리보기 준비
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    previewImage.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-  
-  try {
-    // 품질 체크 실행
-    const qualityResult = await checkImageQuality(file);
-    
-    // 오버레이 숨기기
-    if (overlay) overlay.classList.remove('show');
-    
-    // 미리보기 표시
-    uploadArea.style.display = 'none';
-    previewContainer.style.display = 'block';
-    
-    if (qualityResult.pass) {
-      // 서버에 업로드
-      const formData = new FormData();
-      formData.append('photo', file);
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        APP_STATE.uploadedPhoto = result.filename;
-        qualityBadge.querySelector('strong').textContent = qualityResult.score;
-        qualityBadge.classList.remove('quality-bad');
-        qualityBadge.classList.add('quality-good');
-        nextBtn.disabled = false;
-        showToast('✅ 완벽한 사진이에요!', 'success');
-      }
-    } else {
-      // 품질 불합격
-      qualityBadge.querySelector('strong').textContent = qualityResult.score;
-      qualityBadge.classList.remove('quality-good');
-      qualityBadge.classList.add('quality-bad');
-      nextBtn.disabled = true;
-      showToast('⚠️ ' + qualityResult.message, 'warning');
-    }
-    
-  } catch (error) {
-    console.error('Upload error:', error);
-    if (overlay) overlay.classList.remove('show');
-    
-    // 에러 시에도 진행 가능
-    uploadArea.style.display = 'none';
-    previewContainer.style.display = 'block';
-    APP_STATE.uploadedPhoto = file;
-    qualityBadge.querySelector('strong').textContent = '확인중';
-    nextBtn.disabled = false;
-    showToast('📶 오프라인 모드로 진행합니다', 'info');
-  }
-}
+    <!-- STEP 2: 정보 입력 + 이메일 -->
+    <section class="step-section" id="step2">
+      <div class="step-header">
+        <span class="step-badge">STEP 2</span>
+        <h2>정보를 입력해주세요</h2>
+        <p>산타가 아이 이름을 불러줄 거예요</p>
+      </div>
 
-// ============================================
-// 🔥 Canvas API로 실제 이미지 품질 분석
-// ============================================
-async function checkImageQuality(file) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      img.onload = () => {
-        // Canvas로 이미지 분석
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+      <div class="form-card">
+        <div class="form-group">
+          <label for="childName">아이 이름 <span class="required">*</span></label>
+          <input type="text" id="childName" placeholder="예: 민준이" maxlength="10">
+        </div>
         
-        // 분석용 크기로 리사이즈
-        const maxSize = 200;
-        const scale = Math.min(maxSize / img.width, maxSize / img.height);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // 1. 밝기 체크
-        updateQualityCheck('checkBrightness', 'checking');
-        let totalBrightness = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-          totalBrightness += brightness;
-        }
-        const avgBrightness = totalBrightness / (data.length / 4);
-        const brightnessOk = avgBrightness > 60 && avgBrightness < 200; // 밝기 범위 좁힘
-        
-        setTimeout(() => {
-          updateQualityCheck('checkBrightness', brightnessOk ? 'pass' : 'fail');
-          updateProgress(33);
-        }, 500);
-        
-        // 2. 선명도/흔들림 체크 (라플라시안 분산)
-        setTimeout(() => {
-          updateQualityCheck('checkSharpness', 'checking');
-        }, 600);
-        
-        let sharpnessScore = 0;
-        for (let y = 1; y < canvas.height - 1; y++) {
-          for (let x = 1; x < canvas.width - 1; x++) {
-            const idx = (y * canvas.width + x) * 4;
-            const laplacian = 
-              -data[idx - canvas.width * 4] - data[idx - 4] + 
-              4 * data[idx] - 
-              data[idx + 4] - data[idx + canvas.width * 4];
-            sharpnessScore += Math.abs(laplacian);
-          }
-        }
-        const avgSharpness = sharpnessScore / (canvas.width * canvas.height);
-        const sharpnessOk = avgSharpness > 15; // 흔들림 임계값 높임 (5→15)
-        
-        setTimeout(() => {
-          updateQualityCheck('checkSharpness', sharpnessOk ? 'pass' : 'fail');
-          updateProgress(66);
-        }, 1000);
-        
-        // 3. 해상도 체크
-        setTimeout(() => {
-          updateQualityCheck('checkResolution', 'checking');
-        }, 1100);
-        
-        const resolutionOk = img.width >= 500 && img.height >= 500;
-        
-        setTimeout(() => {
-          updateQualityCheck('checkResolution', resolutionOk ? 'pass' : 'fail');
-          updateProgress(100);
-        }, 1500);
-        
-        // 최종 결과
-        setTimeout(() => {
-          const allPass = brightnessOk && sharpnessOk && resolutionOk;
-          let score = 50;
-          if (brightnessOk) score += 20;
-          if (sharpnessOk) score += 20;
-          if (resolutionOk) score += 10;
-          
-          let message = '';
-          if (!brightnessOk) message = '사진이 너무 어둡거나 밝아요. 조명을 확인해주세요.';
-          else if (!sharpnessOk) message = '사진이 흔들렸어요. 다시 찍어주세요.';
-          else if (!resolutionOk) message = '해상도가 너무 낮아요. 더 가까이서 찍어주세요.';
-          
-          const title = document.getElementById('qualityTitle');
-          const msg = document.getElementById('qualityMessage');
-          
-          if (title) title.textContent = allPass ? '✅ 완벽해요!' : '⚠️ 다시 찍어주세요';
-          if (msg) msg.textContent = allPass ? '산타 합성에 딱 좋은 사진이에요!' : message;
-          
-          resolve({
-            pass: allPass,
-            score: score,
-            message: message,
-            details: {
-              brightness: { ok: brightnessOk, value: avgBrightness },
-              sharpness: { ok: sharpnessOk, value: avgSharpness },
-              resolution: { ok: resolutionOk, width: img.width, height: img.height }
-            }
-          });
-        }, 2000);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
+        <div class="form-group">
+          <label for="childAge">나이</label>
+          <select id="childAge">
+            <option value="">선택</option>
+            <option value="3">3세</option>
+            <option value="4">4세</option>
+            <option value="5">5세</option>
+            <option value="6">6세</option>
+            <option value="7">7세</option>
+            <option value="8">8세 이상</option>
+          </select>
+        </div>
 
-function updateQualityCheck(checkId, status) {
-  const el = document.getElementById(checkId);
-  if (!el) return;
-  
-  el.classList.remove('pass', 'fail', 'checking');
-  
-  const icon = el.querySelector('.check-icon');
-  if (status === 'checking') {
-    icon.textContent = '🔄';
-  } else if (status === 'pass') {
-    el.classList.add('pass');
-    icon.textContent = '✅';
-  } else if (status === 'fail') {
-    el.classList.add('fail');
-    icon.textContent = '❌';
-  } else {
-    icon.textContent = '⏳';
-  }
-}
+        <div class="form-group">
+          <label for="santaMessage">산타에게 전할 말</label>
+          <textarea id="santaMessage" placeholder="예: 올해 정말 착하게 지냈어요!" maxlength="100"></textarea>
+          <span class="char-count"><span id="charCount">0</span>/100</span>
+        </div>
 
-function updateProgress(percent) {
-  const bar = document.getElementById('qualityProgressBar');
-  if (bar) bar.style.width = percent + '%';
-}
+        <div class="form-group">
+          <label for="customerEmail">이메일 주소 <span class="required">*</span></label>
+          <input type="email" id="customerEmail" placeholder="결과물을 받으실 이메일">
+          <span class="email-hint">📩 완성된 산타 사진/영상을 이메일로 보내드려요</span>
+        </div>
+      </div>
 
-// ============================================
-// STEP 2: 아이 정보 입력
-// ============================================
-function initFormValidation() {
-  const childName = document.getElementById('childName');
-  const childAge = document.getElementById('childAge');
-  const santaMessage = document.getElementById('santaMessage');
-  const charCount = document.getElementById('charCount');
-  const nextBtn = document.getElementById('nextStep2');
-  
-  if (!childName || !nextBtn) return;
-  
-  function validateForm() {
-    const isValid = childName.value.trim().length >= 1;
-    nextBtn.disabled = !isValid;
-    return isValid;
-  }
-  
-  childName.addEventListener('input', () => {
-    APP_STATE.childInfo.name = childName.value.trim();
-    validateForm();
-    const nameDisplay = document.getElementById('childNameDisplay');
-    if (nameDisplay) nameDisplay.textContent = childName.value.trim() || '아이';
-  });
-  
-  if (childAge) {
-    childAge.addEventListener('change', () => {
-      APP_STATE.childInfo.age = childAge.value;
-    });
-  }
-  
-  if (santaMessage && charCount) {
-    santaMessage.addEventListener('input', () => {
-      APP_STATE.childInfo.message = santaMessage.value;
-      charCount.textContent = santaMessage.value.length;
-    });
-  }
-}
+      <div class="btn-group">
+        <button class="btn-secondary" id="backStep2">← 이전</button>
+        <button class="btn-primary" id="nextStep2" disabled>다음 →</button>
+      </div>
+    </section>
 
-// ============================================
-// STEP 3: 패키지 선택
-// ============================================
-function initPackageSelection() {
-  const cards = document.querySelectorAll('.price-card');
-  const payBtn = document.getElementById('payButton');
-  
-  cards.forEach(card => {
-    card.addEventListener('click', () => {
-      cards.forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      
-      APP_STATE.selectedPackage = card.dataset.package;
-      updatePriceSummary();
-      checkPaymentReady();
-    });
-  });
-}
+    <!-- STEP 3: 패키지 선택 -->
+    <section class="step-section" id="step3">
+      <div class="step-header">
+        <span class="step-badge">STEP 3</span>
+        <h2><span id="childNameDisplay">아이</span>를 위한 패키지</h2>
+      </div>
 
-function initBumpOffers() {
-  const bumps = document.querySelectorAll('.bump-item input');
-  
-  bumps.forEach(bump => {
-    bump.addEventListener('change', () => {
-      if (bump.checked) {
-        APP_STATE.bumpOffers.push(bump.value);
-      } else {
-        APP_STATE.bumpOffers = APP_STATE.bumpOffers.filter(b => b !== bump.value);
-      }
-      updatePriceSummary();
-    });
-  });
-}
+      <div class="packages">
+        <div class="price-card" data-package="tripwire">
+          <div class="price-header">
+            <span class="package-emoji">📸</span>
+            <h3>산타 포착 사진</h3>
+          </div>
+          <div class="price-body">
+            <div class="price">
+              <span class="original">₩5,000</span>
+              <span class="current">₩1,900</span>
+            </div>
+            <div class="discount-badge">62% 할인</div>
+            <ul class="features">
+              <li>✓ 산타 합성 사진 1장</li>
+              <li>✓ 고화질 다운로드</li>
+              <li>✓ 24시간 내 이메일 전달</li>
+            </ul>
+          </div>
+        </div>
 
-// ============================================
-// 🔥 개인정보 동의
-// ============================================
-function initPrivacyConsent() {
-  const checkbox = document.getElementById('privacyAgree');
-  if (!checkbox) return;
-  
-  checkbox.addEventListener('change', () => {
-    APP_STATE.privacyAgreed = checkbox.checked;
-    checkPaymentReady();
-  });
-}
+        <div class="price-card popular" data-package="core">
+          <div class="popular-badge">🔥 가장 인기</div>
+          <div class="price-header">
+            <span class="package-emoji">🎁</span>
+            <h3>산타의 선물 세트</h3>
+          </div>
+          <div class="price-body">
+            <div class="price">
+              <span class="original">₩25,000</span>
+              <span class="current">₩9,900</span>
+            </div>
+            <div class="discount-badge">60% 할인</div>
+            <ul class="features">
+              <li>✓ 산타 합성 사진 3장</li>
+              <li>✓ 착한아이 인증서</li>
+              <li>✓ 12시간 내 이메일 전달</li>
+            </ul>
+          </div>
+        </div>
 
-function checkPaymentReady() {
-  const payBtn = document.getElementById('payButton');
-  if (!payBtn) return;
-  
-  const isReady = APP_STATE.selectedPackage && APP_STATE.privacyAgreed;
-  payBtn.disabled = !isReady;
-}
+        <div class="price-card" data-package="premium">
+          <div class="price-header">
+            <span class="package-emoji">🎬</span>
+            <h3>산타의 마법 영상</h3>
+          </div>
+          <div class="price-body">
+            <div class="price">
+              <span class="original">₩59,000</span>
+              <span class="current">₩24,900</span>
+            </div>
+            <div class="discount-badge">58% 할인</div>
+            <ul class="features">
+              <li>✓ 사진 5장 + 영상 1편</li>
+              <li>✓ 산타 음성 메시지</li>
+              <li>✓ 6시간 급행 제작</li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
-function updatePriceSummary() {
-  const summaryPackage = document.getElementById('summaryPackage');
-  const summaryBumps = document.getElementById('summaryBumps');
-  const summaryBumpsRow = document.getElementById('summaryBumpsRow');
-  const summaryTotal = document.getElementById('summaryTotal');
-  const savingsEl = document.getElementById('savingsAmount');
-  const savingsRow = document.getElementById('savingsRow');
-  
-  if (!APP_STATE.selectedPackage) return;
-  
-  const pkg = PRICING[APP_STATE.selectedPackage];
-  let total = pkg.price;
-  let original = pkg.originalPrice;
-  
-  if (summaryPackage) {
-    summaryPackage.textContent = `${pkg.name} ₩${pkg.price.toLocaleString()}`;
-  }
-  
-  const bumpNames = [];
-  APP_STATE.bumpOffers.forEach(bumpId => {
-    const bump = BUMP_OFFERS[bumpId];
-    if (bump) {
-      total += bump.price;
-      original += bump.price;
-      bumpNames.push(bump.name);
-    }
-  });
-  
-  if (summaryBumpsRow && summaryBumps) {
-    if (bumpNames.length > 0) {
-      summaryBumps.textContent = bumpNames.join(', ');
-      summaryBumpsRow.style.display = 'flex';
-    } else {
-      summaryBumpsRow.style.display = 'none';
-    }
-  }
-  
-  if (summaryTotal) {
-    summaryTotal.textContent = `₩${total.toLocaleString()}`;
-  }
-  
-  const savings = original - total;
-  if (savingsEl && savingsRow) {
-    if (savings > 0) {
-      savingsEl.textContent = `₩${savings.toLocaleString()}`;
-      savingsRow.style.display = 'flex';
-    } else {
-      savingsRow.style.display = 'none';
-    }
-  }
-}
+      <!-- 범프 오퍼 -->
+      <div class="bump-offers">
+        <h4>🎄 추가 옵션</h4>
+        <label class="bump-item">
+          <input type="checkbox" name="bump" value="certificate">
+          <div class="bump-content">
+            <div class="bump-info"><span class="bump-icon">🎖️</span><span>착한아이 인증서</span></div>
+            <span class="bump-price">+₩2,900</span>
+          </div>
+        </label>
+        <label class="bump-item">
+          <input type="checkbox" name="bump" value="extraPhoto">
+          <div class="bump-content">
+            <div class="bump-info"><span class="bump-icon">📸</span><span>추가 사진 2장</span></div>
+            <span class="bump-price">+₩3,900</span>
+          </div>
+        </label>
+        <label class="bump-item">
+          <input type="checkbox" name="bump" value="rush">
+          <div class="bump-content">
+            <div class="bump-info"><span class="bump-icon">⚡</span><span>30분 급행</span></div>
+            <span class="bump-price">+₩4,900</span>
+          </div>
+        </label>
+      </div>
 
-// ============================================
-// 네비게이션
-// ============================================
-function initNavigation() {
-  const nextStep1 = document.getElementById('nextStep1');
-  if (nextStep1) {
-    nextStep1.addEventListener('click', () => goToStep(2));
-  }
-  
-  const backStep2 = document.getElementById('backStep2');
-  if (backStep2) {
-    backStep2.addEventListener('click', () => goToStep(1));
-  }
-  
-  const nextStep2 = document.getElementById('nextStep2');
-  if (nextStep2) {
-    nextStep2.addEventListener('click', () => {
-      const nameDisplay = document.getElementById('childNameDisplay');
-      if (nameDisplay && APP_STATE.childInfo.name) {
-        nameDisplay.textContent = APP_STATE.childInfo.name;
-      }
-      goToStep(3);
-    });
-  }
-  
-  const backStep3 = document.getElementById('backStep3');
-  if (backStep3) {
-    backStep3.addEventListener('click', () => goToStep(2));
-  }
-}
+      <!-- 가격 요약 -->
+      <div class="price-summary">
+        <div class="summary-row">
+          <span>선택 패키지</span>
+          <span id="summaryPackage">-</span>
+        </div>
+        <div class="summary-row" id="summaryBumpsRow" style="display:none;">
+          <span>추가 옵션</span>
+          <span id="summaryBumps">-</span>
+        </div>
+        <div class="summary-row total">
+          <span>총 결제금액</span>
+          <span id="summaryTotal">₩0</span>
+        </div>
+        <div class="savings-highlight" id="savingsRow">
+          <div class="savings-icon">🎉</div>
+          <div class="savings-text">
+            <span>지금 결제하면</span>
+            <strong id="savingsAmount">₩0</strong>
+            <span>절약!</span>
+          </div>
+        </div>
+      </div>
 
-function goToStep(step) {
-  document.querySelectorAll('.step-section').forEach(section => {
-    section.classList.remove('active');
-  });
-  
-  const targetStep = document.getElementById(`step${step}`);
-  if (targetStep) {
-    targetStep.classList.add('active');
-  }
-  
-  APP_STATE.currentStep = step;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+      <!-- 개인정보 동의 -->
+      <div class="privacy-consent">
+        <label class="consent-checkbox">
+          <input type="checkbox" id="privacyAgree">
+          <span class="consent-text">[필수] <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보 처리방침</a>에 동의합니다</span>
+        </label>
+        <p class="privacy-notice">📌 업로드된 사진은 제작 완료 후 7일 이내 자동 삭제됩니다.</p>
+      </div>
 
-// ============================================
-// 결제 처리
-// ============================================
-function initPayment() {
-  const payButton = document.getElementById('payButton');
-  if (!payButton) return;
-  
-  payButton.addEventListener('click', async () => {
-    if (!APP_STATE.selectedPackage) {
-      showToast('패키지를 선택해주세요', 'warning');
-      return;
-    }
-    
-    if (!APP_STATE.privacyAgreed) {
-      showToast('개인정보 처리방침에 동의해주세요', 'warning');
-      return;
-    }
-    
-    if (!APP_STATE.childInfo.name) {
-      showToast('아이 이름을 입력해주세요', 'warning');
-      goToStep(2);
-      return;
-    }
-    
-    await processPayment();
-  });
-}
+      <div class="btn-group">
+        <button class="btn-secondary" id="backStep3">← 이전</button>
+        <button class="btn-primary btn-pay" id="payButton" disabled>
+          <span class="btn-icon">🔒</span>
+          <span>안전하게 결제하기</span>
+        </button>
+      </div>
 
-async function processPayment() {
-  const pkg = PRICING[APP_STATE.selectedPackage];
-  let totalAmount = pkg.price;
-  
-  APP_STATE.bumpOffers.forEach(bumpId => {
-    const bump = BUMP_OFFERS[bumpId];
-    if (bump) totalAmount += bump.price;
-  });
-  
-  const orderId = `SANTA-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  APP_STATE.orderId = orderId;
-  
-  // 로컬스토리지에 주문 정보 저장 (success 페이지에서 사용)
-  localStorage.setItem('lastOrder', JSON.stringify({
-    orderId,
-    childName: APP_STATE.childInfo.name,
-    packageName: pkg.name,
-    amount: totalAmount
-  }));
-  
-  try {
-    // 서버에 주문 생성
-    const prepareResponse = await fetch('/api/payment/prepare', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        orderId,
-        amount: totalAmount,
-        packageId: APP_STATE.selectedPackage,
-        bumpOffers: APP_STATE.bumpOffers,
-        childInfo: APP_STATE.childInfo,
-        photoFilename: typeof APP_STATE.uploadedPhoto === 'string' 
-          ? APP_STATE.uploadedPhoto 
-          : 'pending'
-      })
-    });
-    
-    const prepareResult = await prepareResponse.json();
-    
-    if (!prepareResult.success) {
-      throw new Error(prepareResult.message || '주문 준비 실패');
-    }
-    
-    // 토스페이먼츠 결제창 호출
-    const tossPayments = TossPayments(TOSS_CLIENT_KEY);
-    
-    await tossPayments.requestPayment('카드', {
-      amount: totalAmount,
-      orderId: orderId,
-      orderName: `🎅 ${pkg.name}${APP_STATE.bumpOffers.length > 0 ? ' + 추가옵션' : ''}`,
-      customerName: APP_STATE.childInfo.name + ' 보호자',
-      successUrl: `${window.location.origin}/payment/success`,
-      failUrl: `${window.location.origin}/payment/fail`
-    });
-    
-  } catch (error) {
-    console.error('Payment error:', error);
-    
-    if (error.code === 'USER_CANCEL') {
-      showToast('결제가 취소되었습니다', 'info');
-    } else {
-      showToast('결제 처리 중 오류: ' + error.message, 'error');
-    }
-  }
-}
+      <div class="payment-info">
+        <div class="payment-methods">
+          <span>💳 카드</span>
+          <span>📱 토스페이</span>
+          <span>🏦 계좌이체</span>
+        </div>
+        <p class="guarantee">✅ 결과물 불만족 시 100% 환불 보장</p>
+      </div>
+    </section>
 
-// ============================================
-// 유틸리티
-// ============================================
-function showToast(message, type = 'info') {
-  const existingToast = document.querySelector('.toast');
-  if (existingToast) existingToast.remove();
-  
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  toast.textContent = message;
-  toast.style.cssText = `
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: ${type === 'success' ? '#4CAF50' : type === 'warning' ? '#ff9800' : type === 'error' ? '#f44336' : '#333'};
-    color: white;
-    padding: 12px 24px;
-    border-radius: 25px;
-    font-size: 14px;
-    z-index: 9999;
-    animation: toastIn 0.3s ease;
-  `;
-  
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.animation = 'toastOut 0.3s ease forwards';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
+    <!-- 리뷰 섹션 (47개) -->
+    <section class="review-section">
+      <h3>💬 부모님들의 생생한 후기</h3>
+      <div class="review-stats">
+        <span class="review-score">⭐ 4.9</span>
+        <span class="review-count">47개 리뷰</span>
+      </div>
+      <div class="reviews-container" id="reviewsContainer"></div>
+    </section>
 
-// 모달 함수
-function showPrivacyPolicy() {
-  const modal = document.getElementById('privacyModal');
-  if (modal) modal.classList.add('show');
-}
+    <!-- FAQ (토글 작동) -->
+    <section class="faq-section">
+      <h3>❓ 자주 묻는 질문</h3>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>진짜처럼 보이나요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">네! AI 전문가와 디자이너가 직접 제작하고 검수합니다. 자연스러운 조명과 그림자까지 세밀하게 조정해요.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>얼마나 걸리나요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">패키지에 따라 6~24시간 내 이메일로 전달됩니다. 급행 옵션 선택 시 30분 내 가능해요!</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>결과물은 어떻게 받나요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">입력하신 이메일로 구글 드라이브 다운로드 링크를 보내드립니다. 바로 다운받아 저장하실 수 있어요.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>개인정보는 안전한가요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">업로드된 사진은 제작 목적으로만 사용되며, 완료 후 7일 이내 완전히 삭제됩니다. 제3자 제공은 절대 없습니다.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>환불 가능한가요?</span>
+            <span class="faq-icon">+</span>
+          </div>
+          <div class="faq-answer">결과물 불만족 시 100% 환불해드립니다. 단, 제작 시작 후에는 환불이 어려울 수 있어요.</div>
+        </div>
+      </div>
+    </section>
 
-function showTerms() {
-  alert('이용약관은 준비 중입니다.');
-}
+    <footer class="footer">
+      <p>© 2024 산타를 만난 순간</p>
+      <p class="footer-links">
+        <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보처리방침</a> | 
+        <a href="mailto:santa.moment.official@gmail.com">문의하기</a>
+      </p>
+    </footer>
+  </div>
 
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) modal.classList.remove('show');
-}
+  <!-- 개인정보 모달 -->
+  <div class="modal" id="privacyModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>개인정보 처리방침</h3>
+        <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h4>1. 수집하는 개인정보</h4>
+        <p>아이 이름, 나이, 이메일 주소, 업로드된 사진, 결제 정보</p>
+        <h4>2. 이용 목적</h4>
+        <p>산타 합성 콘텐츠 제작 및 전달</p>
+        <h4>3. 보유 및 파기</h4>
+        <p>사진: 7일 이내 삭제 / 이메일: 30일 이내 삭제 / 결제정보: 5년 보관</p>
+        <h4>4. 제3자 제공</h4>
+        <p>절대 없음</p>
+      </div>
+      <button class="btn-primary" onclick="closeModal('privacyModal')">확인</button>
+    </div>
+  </div>
 
-// 스타일 추가
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes toastIn {
-    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
-  }
-  @keyframes toastOut {
-    from { opacity: 1; transform: translateX(-50%) translateY(0); }
-    to { opacity: 0; transform: translateX(-50%) translateY(20px); }
-  }
-`;
-document.head.appendChild(style);
+  <script src="app.js"></script>
+</body>
+</html>
