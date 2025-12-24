@@ -33,13 +33,25 @@ const BUMP_OFFERS = {
   letter: { id: 'letter', price: 2900, name: '💌 산타 손편지' }
 };
 
-// 토스페이먼츠 클라이언트 키 (테스트용)
-const TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+// 토스페이먼츠 클라이언트 키 (서버에서 받아옴)
+let TOSS_CLIENT_KEY = '';
 
 // ============================================
 // 초기화
 // ============================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // 🔥 먼저 서버에서 설정 가져오기
+  try {
+    const configRes = await fetch('/api/config');
+    const config = await configRes.json();
+    TOSS_CLIENT_KEY = config.tossClientKey;
+    console.log('✅ 토스 클라이언트 키 로드 완료');
+  } catch (e) {
+    console.error('❌ Config 로드 실패:', e);
+    // 폴백: 테스트 키 사용
+    TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+  }
+  
   initCountdown();
   initUploader();
   initFormValidation();
