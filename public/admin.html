@@ -2,362 +2,174 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>🎅 산타를 만난 순간 | 우리 집에 온 산타 증거</title>
-  <script src="https://js.tosspayments.com/v1/payment"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎅 관리자 - 산타를 만난 순간</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; background: #f5f5f5; }
+    .header {
+      background: linear-gradient(135deg, #1a472a, #2d5016);
+      color: white; padding: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .header h1 { font-size: 20px; }
+    .stats { display: flex; gap: 15px; }
+    .stat { background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 8px; text-align: center; }
+    .stat .num { font-size: 20px; font-weight: bold; }
+    .stat .label { font-size: 11px; opacity: 0.8; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .refresh { background: #1a472a; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-bottom: 20px; }
+    table { width: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .status { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-processing { background: #cce5ff; color: #004085; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 2px; }
+    .btn-primary { background: #1a472a; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-info { background: #17a2b8; color: white; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+    .modal.show { display: flex; }
+    .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 500px; width: 90%; }
+    .modal h3 { margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+    .form-group textarea { height: 100px; }
+    .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-buttons button { flex: 1; padding: 12px; border-radius: 8px; cursor: pointer; }
+    .btn-cancel { background: #f5f5f5; border: none; }
+    .btn-send { background: #28a745; color: white; border: none; }
+    .order-info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+    .order-info p { margin: 5px 0; }
+  </style>
 </head>
 <body>
-  <!-- 실시간 주문 알림 -->
-  <div class="order-notification" id="orderNotification">
-    <div class="notif-icon">🎁</div>
-    <div class="notif-content">
-      <strong id="notifName">김**</strong>님이 <span id="notifPackage">산타의 선물 세트</span>를 주문했어요!
+  <div class="header">
+    <h1>🎅 산타를 만난 순간 - 관리자</h1>
+    <div class="stats">
+      <div class="stat"><div class="num" id="totalOrders">0</div><div class="label">전체</div></div>
+      <div class="stat"><div class="num" id="processingOrders">0</div><div class="label">제작중</div></div>
+      <div class="stat"><div class="num" id="totalRevenue">₩0</div><div class="label">매출</div></div>
     </div>
   </div>
 
-  <!-- 품질 체크 오버레이 -->
-  <div class="quality-overlay" id="qualityOverlay">
-    <div class="quality-modal">
-      <div class="santa-checking">🎅</div>
-      <h3 id="qualityTitle">산타가 사진을 확인중이에요...</h3>
-      <p id="qualityMessage">AI 합성에 적합한지 검사하고 있어요</p>
-      <div class="quality-progress">
-        <div class="progress-bar" id="qualityProgressBar"></div>
-      </div>
-      <div class="quality-checklist">
-        <div class="check-item" id="checkBrightness"><span class="check-icon">⏳</span><span>밝기 확인</span></div>
-        <div class="check-item" id="checkSharpness"><span class="check-icon">⏳</span><span>흔들림 확인</span></div>
-        <div class="check-item" id="checkResolution"><span class="check-icon">⏳</span><span>해상도 확인</span></div>
-      </div>
-    </div>
+  <div class="container">
+    <button class="refresh" onclick="loadOrders()">🔄 새로고침</button>
+    <table>
+      <thead>
+        <tr><th>주문번호</th><th>아이</th><th>패키지</th><th>금액</th><th>이메일</th><th>상태</th><th>시간</th><th>관리</th></tr>
+      </thead>
+      <tbody id="ordersBody"><tr><td colspan="8" style="text-align:center;padding:40px;">로딩...</td></tr></tbody>
+    </table>
   </div>
 
-  <div class="app-container">
-    <!-- 긴급성 배너 -->
-    <div class="urgency-banner">
-      <span class="pulse-dot"></span>
-      <span>🎄 크리스마스 특가! <strong id="countdown">--:--</strong> 후 종료</span>
-      <span class="slots">남은 자리: <strong id="remainingSlots">47</strong>명</span>
-    </div>
-
-    <!-- 헤더 -->
-    <header class="header">
-      <h1>🎅 산타를 만난 순간</h1>
-      <p class="tagline">아이에게 평생 잊지 못할 크리스마스를 선물하세요</p>
-    </header>
-
-    <!-- STEP 1: 사진 업로드 -->
-    <section class="step-section active" id="step1">
-      <div class="step-header">
-        <span class="step-badge">STEP 1</span>
-        <h2>거실 사진을 찍어주세요</h2>
-        <p>산타가 선물을 놓고 갈 공간이에요</p>
-      </div>
-
-      <div class="upload-area" id="uploadArea">
-        <div class="upload-placeholder" id="uploadPlaceholder">
-          <span class="upload-icon">📷</span>
-          <p>터치하여 사진 선택</p>
-          <span class="upload-hint">트리나 거실이 잘 보이게 촬영해주세요</span>
-        </div>
-        <div class="upload-buttons">
-          <button type="button" class="upload-btn camera" id="cameraBtn">📷 카메라</button>
-          <button type="button" class="upload-btn gallery" id="galleryBtn">🖼️ 앨범</button>
-        </div>
-        <input type="file" id="photoInput" accept="image/*" hidden>
-      </div>
-
-      <div class="preview-container" id="previewContainer" style="display:none;">
-        <img id="previewImage" src="" alt="미리보기">
-        <div class="quality-badge" id="qualityBadge">
-          <span class="quality-score">품질: <strong>--</strong>점</span>
-        </div>
-        <button class="btn-retry" id="retryBtn">다시 찍기</button>
-      </div>
-
-      <button class="btn-primary" id="nextStep1" disabled>다음 단계로 →</button>
-
-      <div class="social-proof">
-        <div class="proof-item"><strong>147</strong><span>오늘 주문</span></div>
-        <div class="proof-item"><strong>⭐ 4.9</strong><span>만족도</span></div>
-        <div class="proof-item"><strong>99%</strong><span>아이 반응</span></div>
-      </div>
-    </section>
-
-    <!-- STEP 2: 정보 입력 + 이메일 -->
-    <section class="step-section" id="step2">
-      <div class="step-header">
-        <span class="step-badge">STEP 2</span>
-        <h2>정보를 입력해주세요</h2>
-        <p>산타가 아이 이름을 불러줄 거예요</p>
-      </div>
-
-      <div class="form-card">
-        <div class="form-group">
-          <label for="childName">아이 이름 <span class="required">*</span></label>
-          <input type="text" id="childName" placeholder="예: 민준이" maxlength="10">
-        </div>
-        
-        <div class="form-group">
-          <label for="childAge">나이</label>
-          <select id="childAge">
-            <option value="">선택</option>
-            <option value="3">3세</option>
-            <option value="4">4세</option>
-            <option value="5">5세</option>
-            <option value="6">6세</option>
-            <option value="7">7세</option>
-            <option value="8">8세 이상</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="santaMessage">산타에게 전할 말</label>
-          <textarea id="santaMessage" placeholder="예: 올해 정말 착하게 지냈어요!" maxlength="100"></textarea>
-          <span class="char-count"><span id="charCount">0</span>/100</span>
-        </div>
-
-        <div class="form-group">
-          <label for="customerEmail">이메일 주소 <span class="required">*</span></label>
-          <input type="email" id="customerEmail" placeholder="결과물을 받으실 이메일">
-          <span class="email-hint">📩 완성된 산타 사진/영상을 이메일로 보내드려요</span>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button class="btn-secondary" id="backStep2">← 이전</button>
-        <button class="btn-primary" id="nextStep2" disabled>다음 →</button>
-      </div>
-    </section>
-
-    <!-- STEP 3: 패키지 선택 -->
-    <section class="step-section" id="step3">
-      <div class="step-header">
-        <span class="step-badge">STEP 3</span>
-        <h2><span id="childNameDisplay">아이</span>를 위한 패키지</h2>
-      </div>
-
-      <div class="packages">
-        <div class="price-card" data-package="tripwire">
-          <div class="price-header">
-            <span class="package-emoji">📸</span>
-            <h3>산타 포착 사진</h3>
-          </div>
-          <div class="price-body">
-            <div class="price">
-              <span class="original">₩5,000</span>
-              <span class="current">₩1,900</span>
-            </div>
-            <div class="discount-badge">62% 할인</div>
-            <ul class="features">
-              <li>✓ 산타 합성 사진 1장</li>
-              <li>✓ 고화질 다운로드</li>
-              <li>✓ 24시간 내 이메일 전달</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="price-card popular" data-package="core">
-          <div class="popular-badge">🔥 가장 인기</div>
-          <div class="price-header">
-            <span class="package-emoji">🎁</span>
-            <h3>산타의 선물 세트</h3>
-          </div>
-          <div class="price-body">
-            <div class="price">
-              <span class="original">₩25,000</span>
-              <span class="current">₩9,900</span>
-            </div>
-            <div class="discount-badge">60% 할인</div>
-            <ul class="features">
-              <li>✓ 산타 합성 사진 3장</li>
-              <li>✓ 착한아이 인증서</li>
-              <li>✓ 12시간 내 이메일 전달</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="price-card" data-package="premium">
-          <div class="price-header">
-            <span class="package-emoji">🎬</span>
-            <h3>산타의 마법 영상</h3>
-          </div>
-          <div class="price-body">
-            <div class="price">
-              <span class="original">₩59,000</span>
-              <span class="current">₩24,900</span>
-            </div>
-            <div class="discount-badge">58% 할인</div>
-            <ul class="features">
-              <li>✓ 사진 5장 + 영상 1편</li>
-              <li>✓ 산타 음성 메시지</li>
-              <li>✓ 6시간 급행 제작</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- 범프 오퍼 -->
-      <div class="bump-offers">
-        <h4>🎄 추가 옵션</h4>
-        <label class="bump-item">
-          <input type="checkbox" name="bump" value="certificate">
-          <div class="bump-content">
-            <div class="bump-info"><span class="bump-icon">🎖️</span><span>착한아이 인증서</span></div>
-            <span class="bump-price">+₩2,900</span>
-          </div>
-        </label>
-        <label class="bump-item">
-          <input type="checkbox" name="bump" value="extraPhoto">
-          <div class="bump-content">
-            <div class="bump-info"><span class="bump-icon">📸</span><span>추가 사진 2장</span></div>
-            <span class="bump-price">+₩3,900</span>
-          </div>
-        </label>
-        <label class="bump-item">
-          <input type="checkbox" name="bump" value="rush">
-          <div class="bump-content">
-            <div class="bump-info"><span class="bump-icon">⚡</span><span>30분 급행</span></div>
-            <span class="bump-price">+₩4,900</span>
-          </div>
-        </label>
-      </div>
-
-      <!-- 가격 요약 -->
-      <div class="price-summary">
-        <div class="summary-row">
-          <span>선택 패키지</span>
-          <span id="summaryPackage">-</span>
-        </div>
-        <div class="summary-row" id="summaryBumpsRow" style="display:none;">
-          <span>추가 옵션</span>
-          <span id="summaryBumps">-</span>
-        </div>
-        <div class="summary-row total">
-          <span>총 결제금액</span>
-          <span id="summaryTotal">₩0</span>
-        </div>
-        <div class="savings-highlight" id="savingsRow">
-          <div class="savings-icon">🎉</div>
-          <div class="savings-text">
-            <span>지금 결제하면</span>
-            <strong id="savingsAmount">₩0</strong>
-            <span>절약!</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 개인정보 동의 -->
-      <div class="privacy-consent">
-        <label class="consent-checkbox">
-          <input type="checkbox" id="privacyAgree">
-          <span class="consent-text">[필수] <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보 처리방침</a>에 동의합니다</span>
-        </label>
-        <p class="privacy-notice">📌 업로드된 사진은 제작 완료 후 7일 이내 자동 삭제됩니다.</p>
-      </div>
-
-      <div class="btn-group">
-        <button class="btn-secondary" id="backStep3">← 이전</button>
-        <button class="btn-primary btn-pay" id="payButton" disabled>
-          <span class="btn-icon">🔒</span>
-          <span>안전하게 결제하기</span>
-        </button>
-      </div>
-
-      <div class="payment-info">
-        <div class="payment-methods">
-          <span>💳 카드</span>
-          <span>📱 토스페이</span>
-          <span>🏦 계좌이체</span>
-        </div>
-        <p class="guarantee">✅ 결과물 불만족 시 100% 환불 보장</p>
-      </div>
-    </section>
-
-    <!-- 리뷰 섹션 (47개) -->
-    <section class="review-section">
-      <h3>💬 부모님들의 생생한 후기</h3>
-      <div class="review-stats">
-        <span class="review-score">⭐ 4.9</span>
-        <span class="review-count">47개 리뷰</span>
-      </div>
-      <div class="reviews-container" id="reviewsContainer"></div>
-    </section>
-
-    <!-- FAQ (토글 작동) -->
-    <section class="faq-section">
-      <h3>❓ 자주 묻는 질문</h3>
-      <div class="faq-list">
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>진짜처럼 보이나요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">네! AI 전문가와 디자이너가 직접 제작하고 검수합니다. 자연스러운 조명과 그림자까지 세밀하게 조정해요.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>얼마나 걸리나요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">패키지에 따라 6~24시간 내 이메일로 전달됩니다. 급행 옵션 선택 시 30분 내 가능해요!</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>결과물은 어떻게 받나요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">입력하신 이메일로 구글 드라이브 다운로드 링크를 보내드립니다. 바로 다운받아 저장하실 수 있어요.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>개인정보는 안전한가요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">업로드된 사진은 제작 목적으로만 사용되며, 완료 후 7일 이내 완전히 삭제됩니다. 제3자 제공은 절대 없습니다.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)">
-            <span>환불 가능한가요?</span>
-            <span class="faq-icon">+</span>
-          </div>
-          <div class="faq-answer">결과물 불만족 시 100% 환불해드립니다. 단, 제작 시작 후에는 환불이 어려울 수 있어요.</div>
-        </div>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <p>© 2024 산타를 만난 순간</p>
-      <p class="footer-links">
-        <a href="#" onclick="showPrivacyPolicy(); return false;">개인정보처리방침</a> | 
-        <a href="mailto:santa.moment.official@gmail.com">문의하기</a>
-      </p>
-    </footer>
-  </div>
-
-  <!-- 개인정보 모달 -->
-  <div class="modal" id="privacyModal">
+  <div class="modal" id="deliveryModal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h3>개인정보 처리방침</h3>
-        <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
+      <h3>📩 완성 파일 전달</h3>
+      <div class="order-info" id="deliveryOrderInfo"></div>
+      <div class="form-group">
+        <label>구글 드라이브 링크 *</label>
+        <input type="url" id="driveLink" placeholder="https://drive.google.com/...">
+        <small style="color:#666;">파일을 구글드라이브에 올리고 "링크가 있는 모든 사용자" 공유 설정 후 링크 붙여넣기</small>
       </div>
-      <div class="modal-body">
-        <h4>1. 수집하는 개인정보</h4>
-        <p>아이 이름, 나이, 이메일 주소, 업로드된 사진, 결제 정보</p>
-        <h4>2. 이용 목적</h4>
-        <p>산타 합성 콘텐츠 제작 및 전달</p>
-        <h4>3. 보유 및 파기</h4>
-        <p>사진: 7일 이내 삭제 / 이메일: 30일 이내 삭제 / 결제정보: 5년 보관</p>
-        <h4>4. 제3자 제공</h4>
-        <p>절대 없음</p>
+      <div class="form-group">
+        <label>추가 메시지</label>
+        <textarea id="deliveryMessage" placeholder="예: 즐거운 크리스마스 되세요~"></textarea>
       </div>
-      <button class="btn-primary" onclick="closeModal('privacyModal')">확인</button>
+      <div class="modal-buttons">
+        <button class="btn-cancel" onclick="closeModal()">취소</button>
+        <button class="btn-send" onclick="sendDelivery()">📧 이메일 전송</button>
+      </div>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <div class="modal" id="detailModal">
+    <div class="modal-content">
+      <h3>📋 주문 상세</h3>
+      <div id="detailContent"></div>
+      <button class="btn-cancel" onclick="closeDetail()" style="width:100%;margin-top:20px;">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    let orders = [], currentOrderId = null;
+    document.addEventListener('DOMContentLoaded', loadOrders);
+    
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/admin/orders');
+        const data = await res.json();
+        orders = data.orders || [];
+        document.getElementById('totalOrders').textContent = data.stats?.total || 0;
+        document.getElementById('processingOrders').textContent = data.stats?.processing || 0;
+        document.getElementById('totalRevenue').textContent = '₩' + (data.stats?.revenue || 0).toLocaleString();
+        renderOrders();
+      } catch (e) { document.getElementById('ordersBody').innerHTML = '<tr><td colspan="8" style="color:red;text-align:center;">로드 실패</td></tr>'; }
+    }
+    
+    function renderOrders() {
+      const tbody = document.getElementById('ordersBody');
+      if (!orders.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;">주문 없음</td></tr>'; return; }
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td style="font-family:monospace;font-size:11px;">${o.orderId?.substring(0,18)}...</td>
+          <td><strong>${o.childName || '-'}</strong></td>
+          <td>${o.packageName || '-'}</td>
+          <td>₩${(o.totalPrice || 0).toLocaleString()}</td>
+          <td style="font-size:11px;">${o.customerEmail || '-'}</td>
+          <td><span class="status status-${o.status}">${{pending:'⏳대기',processing:'🎨제작중',completed:'✅완료'}[o.status]||o.status}</span></td>
+          <td style="font-size:11px;">${o.createdAt ? new Date(o.createdAt).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '-'}</td>
+          <td>
+            <button class="btn btn-info" onclick="showDetail('${o.orderId}')">상세</button>
+            ${o.status !== 'completed' ? `<button class="btn btn-success" onclick="openModal('${o.orderId}')">전달</button>` : '✅'}
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    function showDetail(id) {
+      const o = orders.find(x => x.orderId === id); if (!o) return;
+      document.getElementById('detailContent').innerHTML = `
+        <div class="order-info">
+          <p><strong>주문번호:</strong> ${o.orderId}</p>
+          <p><strong>아이:</strong> ${o.childName} (${o.childAge || '-'}세)</p>
+          <p><strong>메시지:</strong> ${o.parentMessage || '-'}</p>
+          <p><strong>패키지:</strong> ${o.packageName}</p>
+          <p><strong>금액:</strong> ₩${o.totalPrice?.toLocaleString()}</p>
+          <p><strong>이메일:</strong> ${o.customerEmail}</p>
+          <p><strong>사진:</strong> <a href="/uploads/${o.photoFilename}" target="_blank">보기</a></p>
+        </div>`;
+      document.getElementById('detailModal').classList.add('show');
+    }
+    function closeDetail() { document.getElementById('detailModal').classList.remove('show'); }
+    
+    function openModal(id) {
+      currentOrderId = id;
+      const o = orders.find(x => x.orderId === id); if (!o) return;
+      document.getElementById('deliveryOrderInfo').innerHTML = `<p><strong>아이:</strong> ${o.childName}</p><p><strong>이메일:</strong> ${o.customerEmail}</p>`;
+      document.getElementById('driveLink').value = '';
+      document.getElementById('deliveryMessage').value = '';
+      document.getElementById('deliveryModal').classList.add('show');
+    }
+    function closeModal() { document.getElementById('deliveryModal').classList.remove('show'); currentOrderId = null; }
+    
+    async function sendDelivery() {
+      const driveLink = document.getElementById('driveLink').value.trim();
+      const message = document.getElementById('deliveryMessage').value.trim();
+      if (!driveLink) { alert('링크를 입력하세요'); return; }
+      try {
+        const res = await fetch('/api/admin/send-delivery', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: currentOrderId, driveLink, message })
+        });
+        const result = await res.json();
+        if (result.success) { alert('✅ 이메일 발송 완료!'); closeModal(); loadOrders(); }
+        else { alert('❌ 실패: ' + (result.error || '오류')); }
+      } catch (e) { alert('❌ 오류: ' + e.message); }
+    }
+  </script>
 </body>
 </html>
