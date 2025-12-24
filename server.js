@@ -103,6 +103,55 @@ const orders = {
 };
 
 // ============================================
+// 대기열 관리 시스템
+// ============================================
+const queueStats = {
+  avgProcessTimeMinutes: 15, // 초기값: 건당 15분
+  completedToday: 0,
+  totalProcessTimeToday: 0, // 분 단위
+  
+  // 평균 처리 시간 업데이트
+  updateAvgTime(processTimeMinutes) {
+    this.completedToday++;
+    this.totalProcessTimeToday += processTimeMinutes;
+    this.avgProcessTimeMinutes = Math.round(this.totalProcessTimeToday / this.completedToday);
+  },
+  
+  // 대기 순번 계산
+  getQueuePosition(orderId) {
+    const pendingOrders = orders.values()
+      .filter(o => o.status === 'processing' && o.paymentStatus === 'paid')
+      .sort((a, b) => new Date(a.paidAt) - new Date(b.paidAt));
+    
+    const position = pendingOrders.findIndex(o => o.orderId === orderId);
+    return position === -1 ? pendingOrders.length + 1 : position + 1;
+  },
+  
+  // 예상 완료 시간 계산
+  getEstimatedCompletion(orderId) {
+    const position = this.getQueuePosition(orderId);
+    const waitMinutes = (position - 1) * this.avgProcessTimeMinutes;
+    const estimatedTime = new Date(Date.now() + waitMinutes * 60 * 1000);
+    
+    // 크리스마스 아침 (12/25 오전 7시) 전인지 체크
+    const christmasMorning = new Date('2024-12-25T07:00:00+09:00');
+    const beforeChristmas = estimatedTime < christmasMorning;
+    
+    return {
+      position,
+      totalInQueue: orders.values().filter(o => o.status === 'processing').length,
+      avgProcessTime: this.avgProcessTimeMinutes,
+      waitMinutes,
+      estimatedTime: estimatedTime.toISOString(),
+      beforeChristmas,
+      guaranteeText: beforeChristmas 
+        ? '✅ 크리스마스 아침 전 도착 보장!' 
+        : '⚠️ 크리스마스 아침 이후 도착 예상'
+    };
+  }
+};
+
+// ============================================
 // 가격 설정
 // ============================================
 const PRICING = {
@@ -380,6 +429,13 @@ app.post('/api/admin/send-delivery', async (req, res) => {
     order.status = 'completed';
     order.deliveryLink = driveLink;
     order.deliveredAt = new Date().toISOString();
+    
+    // 처리 시간 기록 (대기열 평균 계산용)
+    if (order.paidAt) {
+      const processTime = Math.round((Date.now() - new Date(order.paidAt).getTime()) / 60000);
+      queueStats.updateAvgTime(processTime);
+    }
+    
     orders.set(orderId, order);
 
     console.log(`📧 완성 파일 전달 완료: ${order.customerEmail}`);
@@ -391,14 +447,40 @@ app.post('/api/admin/send-delivery', async (req, res) => {
 });
 
 // ============================================
-// API - 주문 조회
+// API - 주문 조회 + 대기열 정보
 // ============================================
 app.get('/api/orders/:orderId', (req, res) => {
   const order = orders.get(req.params.orderId);
   if (!order) {
     return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
   }
-  res.json(order);
+  
+  // 대기열 정보 추가
+  const queueInfo = queueStats.getEstimatedCompletion(req.params.orderId);
+  
+  res.json({
+    ...order,
+    queue: queueInfo
+  });
+});
+
+// API - 전체 대기열 현황
+app.get('/api/queue/status', (req, res) => {
+  const processingOrders = orders.values().filter(o => o.status === 'processing');
+  const completedToday = orders.values().filter(o => 
+    o.status === 'completed' && 
+    o.completedAt && 
+    new Date(o.completedAt).toDateString() === new Date().toDateString()
+  );
+  
+  res.json({
+    currentQueue: processingOrders.length,
+    completedToday: completedToday.length,
+    avgProcessTime: queueStats.avgProcessTimeMinutes,
+    // 마감 정보
+    deadline: '2024-12-24T18:00:00+09:00',
+    isOpen: new Date() < new Date('2024-12-24T18:00:00+09:00')
+  });
 });
 
 // ============================================
