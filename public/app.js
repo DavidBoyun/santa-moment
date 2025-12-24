@@ -371,8 +371,10 @@ function initBumpOffers() {
 }
 
 function updatePriceSummary() {
-  const totalEl = document.getElementById('totalPrice');
-  const originalEl = document.getElementById('originalPrice');
+  const summaryPackage = document.getElementById('summaryPackage');
+  const summaryBumps = document.getElementById('summaryBumps');
+  const summaryBumpsRow = document.getElementById('summaryBumpsRow');
+  const summaryTotal = document.getElementById('summaryTotal');
   const savingsEl = document.getElementById('savingsAmount');
   const savingsRow = document.getElementById('savingsRow');
   
@@ -382,22 +384,46 @@ function updatePriceSummary() {
   let total = pkg.price;
   let original = pkg.originalPrice;
   
+  // 패키지명 표시
+  if (summaryPackage) {
+    summaryPackage.textContent = `${pkg.name} ₩${pkg.price.toLocaleString()}`;
+  }
+  
   // 범프 오퍼 추가
+  const bumpNames = [];
   APP_STATE.bumpOffers.forEach(bumpId => {
     const bump = BUMP_OFFERS[bumpId];
     if (bump) {
       total += bump.price;
       original += bump.price;
+      bumpNames.push(bump.name);
     }
   });
   
-  totalEl.textContent = `₩${total.toLocaleString()}`;
-  originalEl.textContent = `₩${original.toLocaleString()}`;
+  // 범프 오퍼 표시
+  if (summaryBumpsRow && summaryBumps) {
+    if (bumpNames.length > 0) {
+      summaryBumps.textContent = bumpNames.join(', ');
+      summaryBumpsRow.style.display = 'flex';
+    } else {
+      summaryBumpsRow.style.display = 'none';
+    }
+  }
   
+  // 총 금액 표시
+  if (summaryTotal) {
+    summaryTotal.textContent = `₩${total.toLocaleString()}`;
+  }
+  
+  // 절약 금액 표시
   const savings = original - total;
-  if (savings > 0) {
-    savingsEl.textContent = `₩${savings.toLocaleString()}`;
-    savingsRow.style.display = 'flex';
+  if (savingsEl && savingsRow) {
+    if (savings > 0) {
+      savingsEl.textContent = `₩${savings.toLocaleString()}`;
+      savingsRow.style.display = 'flex';
+    } else {
+      savingsRow.style.display = 'none';
+    }
   }
 }
 
@@ -406,24 +432,35 @@ function updatePriceSummary() {
 // ============================================
 function initNavigation() {
   // Step 1 → 2
-  document.getElementById('nextStep1').addEventListener('click', () => {
-    goToStep(2);
-  });
+  const nextStep1 = document.getElementById('nextStep1');
+  if (nextStep1) {
+    nextStep1.addEventListener('click', () => goToStep(2));
+  }
   
   // Step 2 → 1
-  document.getElementById('backStep2').addEventListener('click', () => {
-    goToStep(1);
-  });
+  const backStep2 = document.getElementById('backStep2');
+  if (backStep2) {
+    backStep2.addEventListener('click', () => goToStep(1));
+  }
   
   // Step 2 → 3
-  document.getElementById('nextStep2').addEventListener('click', () => {
-    goToStep(3);
-  });
+  const nextStep2 = document.getElementById('nextStep2');
+  if (nextStep2) {
+    nextStep2.addEventListener('click', () => {
+      // 아이 이름을 STEP 3에 표시
+      const nameDisplay = document.getElementById('childNameDisplay');
+      if (nameDisplay && APP_STATE.childInfo.name) {
+        nameDisplay.textContent = APP_STATE.childInfo.name;
+      }
+      goToStep(3);
+    });
+  }
   
   // Step 3 → 2
-  document.getElementById('backStep3').addEventListener('click', () => {
-    goToStep(2);
-  });
+  const backStep3 = document.getElementById('backStep3');
+  if (backStep3) {
+    backStep3.addEventListener('click', () => goToStep(2));
+  }
 }
 
 function goToStep(step) {
