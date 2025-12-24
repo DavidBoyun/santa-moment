@@ -155,14 +155,15 @@ const queueStats = {
 // 가격 설정
 // ============================================
 const PRICING = {
-  tripwire: { id: 'tripwire', price: 1900, originalPrice: 5000, name: '산타 포착 사진' },
-  core: { id: 'core', price: 9900, originalPrice: 25000, name: '산타의 선물 세트' },
-  premium: { id: 'premium', price: 24900, originalPrice: 59000, name: '산타의 마법 영상' }
+  photo1: { id: 'photo1', price: 1900, originalPrice: 5000, name: '산타 포착 사진' },
+  giftset: { id: 'giftset', price: 4900, originalPrice: 15000, name: '산타 선물세트' },
+  videoonly: { id: 'videoonly', price: 17900, originalPrice: 39000, name: '영상만' },
+  premium: { id: 'premium', price: 19900, originalPrice: 59000, name: '산타의 마법 영상' }
 };
 
 const BUMP_OFFERS = {
   certificate: { id: 'certificate', price: 2900, name: '착한아이 인증서' },
-  extraPhoto: { id: 'extraPhoto', price: 3900, name: '추가 사진 2장' },
+  letter: { id: 'letter', price: 3900, name: '산타 자필편지' },
   rush: { id: 'rush', price: 4900, name: '30분 급행' }
 };
 
